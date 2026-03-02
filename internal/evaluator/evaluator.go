@@ -119,6 +119,8 @@ func (e *Evaluator) Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 		return evalPrefixExpression(node, right)
+	case *ast.UpdateExpression:
+		return e.evalUpdateExpression(node, env)
 	case *ast.InfixExpression:
 		if isAssignment(node.Operator) {
 			return e.evalAssignment(node, env)
@@ -1027,6 +1029,74 @@ func evalPrefixExpression(node *ast.PrefixExpression, right object.Object) objec
 	default:
 		return object.NewError(node.Line(), node.Column(), "unknown operator: %s%s", node.Operator, right.Type())
 	}
+}
+
+func (e *Evaluator) evalUpdateExpression(node *ast.UpdateExpression, env *object.Environment) object.Object {
+	target := node.Target
+	current := e.Eval(target, env)
+	if isError(current) {
+		return current
+	}
+
+	var updated object.Object
+	switch v := current.(type) {
+	case *object.Integer:
+		if node.Operator == "++" {
+			updated = &object.Integer{Value: v.Value + 1}
+		} else {
+			updated = &object.Integer{Value: v.Value - 1}
+		}
+	case *object.Float:
+		if node.Operator == "++" {
+			updated = &object.Float{Value: v.Value + 1}
+		} else {
+			updated = &object.Float{Value: v.Value - 1}
+		}
+	default:
+		return object.NewError(node.Line(), node.Column(), "unsupported operand type for %s: %s", node.Operator, current.Type())
+	}
+
+	// Update target in environment / member / index.
+	switch t := target.(type) {
+	case *ast.Identifier:
+		if dist, ok := e.Resolutions[t]; ok {
+			if !env.UpdateAt(dist, t.Value, updated) {
+				return object.NewError(node.Line(), node.Column(), "cannot reassign to const: %s", t.Value)
+			}
+		} else {
+			_, updatedOk := env.Update(t.Value, updated)
+			if !updatedOk {
+				env.Set(t.Value, updated)
+			}
+		}
+	case *ast.MemberExpression:
+		obj := e.Eval(t.Object, env)
+		if isError(obj) {
+			return obj
+		}
+		if res := evalAssignMember(obj, t, updated); isError(res) {
+			return res
+		}
+	case *ast.IndexExpression:
+		obj := e.Eval(t.Left, env)
+		if isError(obj) {
+			return obj
+		}
+		idx := e.Eval(t.Index, env)
+		if isError(idx) {
+			return idx
+		}
+		if res := evalAssignIndex(obj, idx, updated, t); isError(res) {
+			return res
+		}
+	default:
+		return object.NewError(node.Line(), node.Column(), "invalid left-hand side in update")
+	}
+
+	if node.Prefix {
+		return updated
+	}
+	return current
 }
 
 func evalMinusOperatorExpression(node *ast.PrefixExpression, right object.Object) object.Object {

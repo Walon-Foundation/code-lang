@@ -60,7 +60,11 @@ func (l *Lexer) NextToken() token.Token {
 	case ')':
 		tok = newToken(token.RPAREN, l.ch, currentLine, currentColumn)
 	case '+':
-		if l.peakChar() == '=' {
+		if l.peakChar() == '+' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.INC, Literal: string(ch) + string(l.ch), Line: currentLine, Column: currentColumn}
+		} else if l.peakChar() == '=' {
 			ch := l.ch
 			l.readChar()
 			tok = token.Token{Type: token.ADD_ASSIGN, Literal: string(ch) + string(l.ch), Line: currentLine, Column: currentColumn}
@@ -72,7 +76,11 @@ func (l *Lexer) NextToken() token.Token {
 	case '}':
 		tok = newToken(token.RBRACE, l.ch, currentLine, currentColumn)
 	case '-':
-		if l.peakChar() == '=' {
+		if l.peakChar() == '-' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.DEC, Literal: string(ch) + string(l.ch), Column: currentColumn, Line: currentLine}
+		} else if l.peakChar() == '=' {
 			ch := l.ch
 			l.readChar()
 			tok = token.Token{Type: token.SUB_ASSIGN, Literal: string(ch) + string(l.ch), Column: currentColumn, Line: currentLine}
@@ -152,16 +160,16 @@ func (l *Lexer) NextToken() token.Token {
 	case ',':
 		tok = newToken(token.COMMA, l.ch, currentLine, currentColumn)
 	case '|':
-		if l.peakChar() == '|'{
+		if l.peakChar() == '|' {
 			ch := l.ch
 			l.readChar()
-			tok = token.Token{Type: token.OR, Literal: string(ch)+string(l.ch), Line:currentLine, Column: currentColumn}
+			tok = token.Token{Type: token.OR, Literal: string(ch) + string(l.ch), Line: currentLine, Column: currentColumn}
 		}
 	case '&':
-		if l.peakChar() == '&'{
+		if l.peakChar() == '&' {
 			ch := l.ch
 			l.readChar()
-			tok = token.Token{Type: token.AND, Literal: string(ch)+string(l.ch), Line: currentLine, Column: currentColumn}
+			tok = token.Token{Type: token.AND, Literal: string(ch) + string(l.ch), Line: currentLine, Column: currentColumn}
 		}
 	case '"':
 		tok.Type = token.STRING

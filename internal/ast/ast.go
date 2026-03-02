@@ -147,6 +147,34 @@ func (i *InfixExpression) String() string {
 func (i *InfixExpression) Line() int   { return i.Token.Line }
 func (i *InfixExpression) Column() int { return i.Token.Column }
 
+type UpdateExpression struct {
+	Token    token.Token
+	Operator string
+	Target   Expression
+	Prefix   bool
+}
+
+func (u *UpdateExpression) expressionNode()      {}
+func (u *UpdateExpression) TokenLiteral() string { return u.Token.Literal }
+func (u *UpdateExpression) String() string {
+	var out bytes.Buffer
+	if u.Prefix {
+		out.WriteString("(")
+		out.WriteString(u.Operator)
+		out.WriteString(u.Target.String())
+		out.WriteString(")")
+		return out.String()
+	}
+
+	out.WriteString("(")
+	out.WriteString(u.Target.String())
+	out.WriteString(u.Operator)
+	out.WriteString(")")
+	return out.String()
+}
+func (u *UpdateExpression) Line() int   { return u.Token.Line }
+func (u *UpdateExpression) Column() int { return u.Token.Column }
+
 type Identifier struct {
 	Token token.Token
 	Value string

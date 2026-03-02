@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/walonCode/code-lang/internal/ast"
@@ -26,6 +27,211 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 - 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSub),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 * 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMul),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 / 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpDiv),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "5 % 2;",
+			expectedConstant: []any{5, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMod),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "2 ** 3;",
+			expectedConstant: []any{2, 3},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPow),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "5 // 2;",
+			expectedConstant: []any{5, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpFloorDiv),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1; 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "true;",
+			expectedConstant: []any{},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "false;",
+			expectedConstant: []any{},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTest(t, tests)
+}
+
+func TestFloatArithmetic(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:            "1.5 + 2.25;",
+			expectedConstant: []any{1.5, 2.25},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "3.0 * 2.0;",
+			expectedConstant: []any{3.0, 2.0},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMul),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "5.0 % 2.0;",
+			expectedConstant: []any{5.0, 2.0},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpMod),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "2.0 ** 3.0;",
+			expectedConstant: []any{2.0, 3.0},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPow),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "5.0 // 2.0;",
+			expectedConstant: []any{5.0, 2.0},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpFloorDiv),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTest(t, tests)
+}
+
+func TestAssignmentsAndUpdates(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:            "let x = 1;",
+			expectedConstant: []any{1},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+			},
+		},
+		{
+			input:            "x = 2;",
+			expectedConstant: []any{2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "x += 2;",
+			expectedConstant: []any{2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpAdd),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "++x;",
+			expectedConstant: []any{1},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpAdd),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "x++;",
+			expectedConstant: []any{1},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpDup),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpAdd),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpPop),
 			},
 		},
 	}
@@ -110,6 +316,12 @@ func testConstants(
 				return fmt.Errorf("constant %d - testIntegerObject failed: %s",
 					i, err)
 			}
+		case float64:
+			err := testFloatObject(constant, actual[i])
+			if err != nil {
+				return fmt.Errorf("constant %d - testFloatObject failed: %s",
+					i, err)
+			}
 		}
 	}
 	return nil
@@ -123,6 +335,19 @@ func testIntegerObject(expected int64, actual object.Object) error {
 	}
 	if result.Value != expected {
 		return fmt.Errorf("object has wrong value. got=%d, want=%d",
+			result.Value, expected)
+	}
+	return nil
+}
+
+func testFloatObject(expected float64, actual object.Object) error {
+	result, ok := actual.(*object.Float)
+	if !ok {
+		return fmt.Errorf("object is not Float. got=%T (%+v)",
+			actual, actual)
+	}
+	if math.Abs(result.Value-expected) > 1e-9 {
+		return fmt.Errorf("object has wrong value. got=%f, want=%f",
 			result.Value, expected)
 	}
 	return nil

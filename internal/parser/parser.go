@@ -20,6 +20,7 @@ const (
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -x or !x
+	POSTFIX     // x++ or x--
 	CALL        //myfunction(x)
 	INDEX
 	MEMBER
@@ -45,6 +46,8 @@ var precendeces = map[token.TokenType]int{
 	token.FLOOR:              PRODUCT,
 	token.REM:                PRODUCT,
 	token.SQUARE:             PRODUCT,
+	token.INC:                POSTFIX,
+	token.DEC:                POSTFIX,
 	token.LPAREN:             CALL,
 	token.LBRACKET:           INDEX,
 	token.DOT:                MEMBER,
@@ -422,6 +425,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.INC, p.parseUpdatePrefixExpression)
+	p.registerPrefix(token.DEC, p.parseUpdatePrefixExpression)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
@@ -461,6 +466,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 	p.registerInfix(token.DOT, p.parseMemberExpression)
+	p.registerInfix(token.INC, p.parseUpdatePostfixExpression)
+	p.registerInfix(token.DEC, p.parseUpdatePostfixExpression)
 	return p
 }
 
@@ -795,6 +802,28 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	expression.Right = p.parseExpression(predence)
 
 	return expression
+}
+
+func (p *Parser) parseUpdatePrefixExpression() ast.Expression {
+	exp := &ast.UpdateExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Prefix:   true,
+	}
+
+	p.nextToken()
+	exp.Target = p.parseExpression(PREFIX)
+
+	return exp
+}
+
+func (p *Parser) parseUpdatePostfixExpression(left ast.Expression) ast.Expression {
+	return &ast.UpdateExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+		Target:   left,
+		Prefix:   false,
+	}
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {

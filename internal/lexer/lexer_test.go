@@ -6,7 +6,7 @@ import (
 	"github.com/walonCode/code-lang/internal/token"
 )
 
-func TestNextToken(t *testing.T){
+func TestNextToken(t *testing.T) {
 	input := `let five = 5;
 	let ten = 10;
 	
@@ -53,15 +53,17 @@ func TestNextToken(t *testing.T){
 	*=
 	/=
 	%=
+	++
+	--
 	user.name
 	import "walon"
 	struct
 	||
 	&&
 	`
-	
-	test := []struct{
-		expectedType token.TokenType
+
+	test := []struct {
+		expectedType    token.TokenType
 		expectedLiteral string
 	}{
 		{token.LET, "let"},
@@ -180,7 +182,9 @@ func TestNextToken(t *testing.T){
 		{token.MUL_ASSIGN, "*="},
 		{token.QUO_ASSIGN, "/="},
 		{token.REM_ASSIGN, "%="},
-		{token.IDENT,"user"},
+		{token.INC, "++"},
+		{token.DEC, "--"},
+		{token.IDENT, "user"},
 		{token.DOT, "."},
 		{token.IDENT, "name"},
 		{token.IMPORT, "import"},
@@ -190,24 +194,23 @@ func TestNextToken(t *testing.T){
 		{token.AND, "&&"},
 		{token.EOF, ""},
 	}
-	
+
 	l := New(input)
-	
+
 	for i, tt := range test {
 		tok := l.NextToken()
 		// println(tok.Literal, tt.expectedLiteral)
-		if tok.Type != tt.expectedType{
+		if tok.Type != tt.expectedType {
 			t.Fatalf("tests[%d] - tokentype wrong. expected=%v, got=%v",
-				i, tt.expectedType,tok.Type)
+				i, tt.expectedType, tok.Type)
 		}
-		
+
 		if tok.Literal != tt.expectedLiteral {
 			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q",
-			i, tt.expectedLiteral, tok.Literal)
+				i, tt.expectedLiteral, tok.Literal)
 		}
 	}
 }
-
 
 func TestLineAndColumn(t *testing.T) {
 	input := `let x = 5;

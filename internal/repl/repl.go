@@ -48,6 +48,9 @@ func Start(out io.Writer) {
 
 	defer r1.Close()
 
+	comp := compiler.New()
+	globals := make([]object.Object, vm.GLOBALS_SIZE)
+
 	for {
 		line, err := r1.Readline()
 
@@ -77,22 +80,22 @@ func Start(out io.Writer) {
 			builder.Errors = nil // Clear errors for next line
 			continue
 		}
-		
-		comp := compiler.New()
+
+		comp.Reset()
 		err = comp.Compile(programe)
 		if err != nil {
-			fmt.Fprintf(out, "whoops! compilation failed:\n %s\n",err)
+			fmt.Fprintf(out, "whoops! compilation failed:\n %s\n", err)
 			continue
 		}
-		
-		machine := vm.New(comp.ByteCode())
+
+		machine := vm.NewWithGlobals(comp.ByteCode(), globals)
 		err = machine.Run()
 		if err != nil {
 			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
 			continue
 		}
-		
-		stackTop := machine.StackTop()
+
+		stackTop := machine.LastPoppedStackElm()
 		io.WriteString(out, stackTop.Inspect())
 		io.WriteString(out, "\n")
 	}
@@ -154,16 +157,16 @@ func Execute(source string, out io.Writer) {
 	comp := compiler.New()
 	err := comp.Compile(program)
 	if err != nil {
-		fmt.Fprintf(out, "whoops! compilation failed:\n %s\n",err)
+		fmt.Fprintf(out, "whoops! compilation failed:\n %s\n", err)
 	}
-	
+
 	machine := vm.New(comp.ByteCode())
 	err = machine.Run()
 	if err != nil {
 		fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
 	}
-	
-	stackTop := machine.StackTop()
+
+	stackTop := machine.LastPoppedStackElm()
 	io.WriteString(out, stackTop.Inspect())
 	io.WriteString(out, "\n")
 }

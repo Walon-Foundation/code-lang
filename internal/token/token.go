@@ -34,6 +34,8 @@ const (
 	REM    = "%"
 	SQUARE = "**"
 	FLOOR  = "//"
+	INC    = "++"
+	DEC    = "--"
 
 	//logic operator
 	AND = "&&"

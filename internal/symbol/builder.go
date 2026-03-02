@@ -158,6 +158,16 @@ func (b *Builder) VisitExpression(expr ast.Expression) {
 			return
 		}
 		b.VisitExpression(e.Right)
+	case *ast.UpdateExpression:
+		if e == nil {
+			return
+		}
+		if ident, ok := e.Target.(*ast.Identifier); ok {
+			if sym := b.Resolve(ident.Value); sym != nil && sym.Kind == CONSTANT {
+				b.error(ident.Line(), ident.Column(), "cannot reassign to const: %s", ident.Value)
+			}
+		}
+		b.VisitExpression(e.Target)
 	case *ast.InfixExpression:
 		if e == nil {
 			return

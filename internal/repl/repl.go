@@ -131,6 +131,7 @@ func Execute(source string, out io.Writer) {
 	l := lexer.New(source)
 	p := parser.New(l)
 	program := p.ParsePrograme()
+	globals := make([]object.Object, vm.GLOBALS_SIZE)
 
 	if len(p.Errors()) != 0 {
 		printParserError(out, p.Errors())
@@ -155,12 +156,13 @@ func Execute(source string, out io.Writer) {
 	}
 
 	comp := compiler.New()
+	
 	err := comp.Compile(program)
 	if err != nil {
 		fmt.Fprintf(out, "whoops! compilation failed:\n %s\n", err)
 	}
 
-	machine := vm.New(comp.ByteCode())
+	machine := vm.NewWithGlobals(comp.ByteCode(), globals)
 	err = machine.Run()
 	if err != nil {
 		fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)

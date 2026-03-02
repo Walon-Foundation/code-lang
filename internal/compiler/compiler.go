@@ -57,8 +57,26 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.Boolean:
+		if node.Value {
+			c.emit(code.OpTrue)
+		} else {
+			c.emit(code.OpFalse)
+		}
 
 	case *ast.InfixExpression:
+		if node.Operator == "<" {
+			err := c.Compile(node.Right)
+			if err != nil {
+				return err
+			}
+			err = c.Compile(node.Left)
+			if err != nil {
+				return err
+			}
+			c.emit(code.OpGreaterThan)
+			return nil
+		}
 		if isAssignmentOperator(node.Operator) {
 			return c.compileAssignment(node)
 		}
@@ -87,6 +105,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpPow)
 		case "//":
 			c.emit(code.OpFloorDiv)
+		case ">":
+			c.emit(code.OpGreaterThan)
+		case ">=":
+			c.emit(code.OpGreaterEq)
+		case "<=":
+			c.emit(code.OpLessEq)
+		case "==":
+			c.emit(code.OpEqual)
+		case "!=":
+			c.emit(code.OpNotEqual)
 		default:
 			return fmt.Errorf("unknown operator %s", node.Operator)
 		}

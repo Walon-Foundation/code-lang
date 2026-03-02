@@ -100,6 +100,13 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			},
 		},
+	}
+
+	runCompilerTest(t, tests)
+}
+
+func TestBooleanExpression(t *testing.T) {
+	tests := []compilerTestCase{
 		{
 			input:            "true;",
 			expectedConstant: []any{},
@@ -113,6 +120,106 @@ func TestIntegerArithmetic(t *testing.T) {
 			expectedConstant: []any{},
 			expectInstructions: []code.Instructions{
 				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 > 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterThan),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 < 2;",
+			expectedConstant: []any{2, 1},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterThan),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 >= 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterEq),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 <= 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpLessEq),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 >= 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpGreaterEq),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 <= 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpLessEq),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 == 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "1 != 2;",
+			expectedConstant: []any{1, 2},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "true == false;",
+			expectedConstant: []any{},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpFalse),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input:            "true != false;",
+			expectedConstant: []any{},
+			expectInstructions: []code.Instructions{
+				code.Make(code.OpTrue),
+				code.Make(code.OpFalse),
+				code.Make(code.OpNotEqual),
 				code.Make(code.OpPop),
 			},
 		},

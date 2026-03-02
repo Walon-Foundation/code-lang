@@ -12,6 +12,9 @@ import (
 const STACKSIZE = 2048
 const GLOBALS_SIZE = 65536
 
+var True = &object.Boolean{Value: true}
+var False = &object.Boolean{Value: false}
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
@@ -182,6 +185,98 @@ func toFloat64(obj object.Object) (float64, bool) {
 	}
 }
 
+func (vm *VM) executeComparison(op code.Opcode) error {
+	right := vm.pop()
+	left := vm.pop()
+
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		return vm.executeIntegerComparison(op, left, right)
+	case left.Type() == object.FLOAT_OBJ || right.Type() == object.FLOAT_OBJ:
+		leftVal, ok := toFloat64(left)
+		if !ok {
+			return fmt.Errorf("unsupported type for comparison: %s %s", left.Type(), right.Type())
+		}
+		rightVal, ok := toFloat64(right)
+		if !ok {
+			return fmt.Errorf("unsupported type for comparison: %s %s", left.Type(), right.Type())
+		}
+		return vm.executeFloatComparison(op, leftVal, rightVal)
+	case left.Type() == object.BOOLEAN_OBJ && right.Type() == object.BOOLEAN_OBJ:
+		return vm.executeBooleanComparison(op, left, right)
+	default:
+		return fmt.Errorf("unsupported type for comparison: %s %s", left.Type(), right.Type())
+	}
+}
+
+func (vm *VM) executeIntegerComparison(op code.Opcode, left, right object.Object) error {
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
+
+	var result bool
+	switch op {
+	case code.OpEqual:
+		result = leftVal == rightVal
+	case code.OpNotEqual:
+		result = leftVal != rightVal
+	case code.OpGreaterThan:
+		result = leftVal > rightVal
+	case code.OpGreaterEq:
+		result = leftVal >= rightVal
+	case code.OpLessEq:
+		result = leftVal <= rightVal
+	default:
+		return fmt.Errorf("unknown integer comparison operator: %d", op)
+	}
+
+	return vm.push(nativeBool(result))
+}
+
+func (vm *VM) executeFloatComparison(op code.Opcode, left, right float64) error {
+	var result bool
+	switch op {
+	case code.OpEqual:
+		result = left == right
+	case code.OpNotEqual:
+		result = left != right
+	case code.OpGreaterThan:
+		result = left > right
+	case code.OpGreaterEq:
+		result = left >= right
+	case code.OpLessEq:
+		result = left <= right
+	default:
+		return fmt.Errorf("unknown float comparison operator: %d", op)
+	}
+
+	return vm.push(nativeBool(result))
+}
+
+func (vm *VM) executeBooleanComparison(op code.Opcode, left, right object.Object) error {
+	leftVal := left.(*object.Boolean).Value
+	rightVal := right.(*object.Boolean).Value
+
+	var result bool
+	switch op {
+	case code.OpEqual:
+		result = leftVal == rightVal
+	case code.OpNotEqual:
+		result = leftVal != rightVal
+	default:
+		return fmt.Errorf("unknown boolean comparison operator: %d", op)
+	}
+
+	return vm.push(nativeBool(result))
+}
+
+func nativeBool(value bool) object.Object {
+	if value {
+		return object.TRUE
+	}
+	return object.FALSE
+}
+
+
 func (vm *VM) Run() error {
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
@@ -197,6 +292,11 @@ func (vm *VM) Run() error {
 			}
 		case code.OpAdd, code.OpDiv, code.OpSub, code.OpMul, code.OpMod, code.OpPow, code.OpFloorDiv:
 			err := vm.executeBinaryOperation(op)
+			if err != nil {
+				return err
+			}
+		case code.OpEqual, code.OpNotEqual, code.OpGreaterThan, code.OpGreaterEq, code.OpLessEq:
+			err := vm.executeComparison(op)
 			if err != nil {
 				return err
 			}
@@ -224,6 +324,16 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpTrue:
+			err := vm.push(True)
+			if err != nil {
+				return err
+			}
+		case code.OpFalse:
+			err := vm.push(False)
+			if err != nil {
+				return err
+			}
 		case code.OpPop:
 			vm.pop()
 		}
@@ -231,3 +341,4 @@ func (vm *VM) Run() error {
 
 	return nil
 }
+

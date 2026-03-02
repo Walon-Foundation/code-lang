@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 
 	"github.com/chzyer/readline"
-	"github.com/walonCode/code-lang/internal/evaluator"
+	"github.com/walonCode/code-lang/internal/compiler"
 	"github.com/walonCode/code-lang/internal/lexer"
 	"github.com/walonCode/code-lang/internal/object"
 	"github.com/walonCode/code-lang/internal/parser"
 	"github.com/walonCode/code-lang/internal/std/general"
 	"github.com/walonCode/code-lang/internal/symbol"
+	"github.com/walonCode/code-lang/internal/vm"
 )
 
 const PROMPT = ">> "
@@ -76,15 +77,24 @@ func Start(out io.Writer) {
 			builder.Errors = nil // Clear errors for next line
 			continue
 		}
-
-		evaluator := &evaluator.Evaluator{Resolutions: builder.Resolutions}
-
-		evaluated := evaluator.Eval(programe, env)
-		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+		
+		comp := compiler.New()
+		err = comp.Compile(programe)
+		if err != nil {
+			fmt.Fprintf(out, "whoops! compilation failed:\n %s\n",err)
+			continue
 		}
-
+		
+		machine := vm.New(comp.ByteCode())
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
+			continue
+		}
+		
+		stackTop := machine.StackTop()
+		io.WriteString(out, stackTop.Inspect())
+		io.WriteString(out, "\n")
 	}
 }
 
@@ -141,10 +151,19 @@ func Execute(source string, out io.Writer) {
 		return
 	}
 
-	evaluator := evaluator.Evaluator{Resolutions: builder.Resolutions}
-	evaluated := evaluator.Eval(program, env)
-	if evaluated != nil && evaluated.Type() == object.ERROR_OBJ {
-		io.WriteString(out, evaluated.Inspect())
-		io.WriteString(out, "\n")
+	comp := compiler.New()
+	err := comp.Compile(program)
+	if err != nil {
+		fmt.Fprintf(out, "whoops! compilation failed:\n %s\n",err)
 	}
+	
+	machine := vm.New(comp.ByteCode())
+	err = machine.Run()
+	if err != nil {
+		fmt.Fprintf(out, "Woops! Executing bytecode failed:\n %s\n", err)
+	}
+	
+	stackTop := machine.StackTop()
+	io.WriteString(out, stackTop.Inspect())
+	io.WriteString(out, "\n")
 }

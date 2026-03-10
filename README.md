@@ -42,6 +42,10 @@ Code-Lang is a modern, interpreted programming language written in Go. It began 
 - **Standard Library:** Go-backed modules for `math`, `strings`, `time`, `hash`, `os`, `json`, and `net`.
 - **REPL:** Interactive shell with persistent history and precise line/column error tracking.
 - **File Execution:** Run scripts with the `.cl` extension.
+- **Bytecode VM (WIP):** A compiler + VM backend now powers the REPL and file execution.
+  - Supports arithmetic, `%`, `**`, `//`, comparisons (`==`, `!=`, `>`, `<`, `>=`, `<=`) with float support.
+  - Supports assignment and updates: `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `**=`, `//=`, `++`, `--`.
+  - Current limitation: VM uses a global-only store (locals/scopes are still WIP in the VM).
 - **Language Server Protocol (LSP):** Built-in Language Server providing IDE-like features:
   - Auto-completion, Hover previews, and live Diagnostics.
   - Go to Definition / Declaration / Implementation.

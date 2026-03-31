@@ -8,19 +8,28 @@ import (
 	"github.com/walonCode/code-lang/internal/object"
 )
 
+type EmittedInstruction struct {
+	Opcode   code.Opcode
+	Position int
+}
+
 type Compiler struct {
-	instruction code.Instructions
-	constants   []object.Object
-	globals     map[string]int
-	globalCount int
+	instruction         code.Instructions
+	constants           []object.Object
+	globals             map[string]int
+	globalCount         int
+	lastInstruction     EmittedInstruction
+	previousInstruction EmittedInstruction
 }
 
 func New() *Compiler {
 	return &Compiler{
-		instruction: code.Instructions{},
-		constants:   []object.Object{},
-		globals:     map[string]int{},
-		globalCount: 0,
+		instruction:         code.Instructions{},
+		constants:           []object.Object{},
+		globals:             map[string]int{},
+		globalCount:         0,
+		lastInstruction:     EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
 	}
 }
 
@@ -57,26 +66,33 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.BlockStatement:
+		for _, s := range node.Statements {
+			err := c.Compile(s)
+			if err != nil {
+				return err
+			}
+		}
 	case *ast.Boolean:
 		if node.Value {
 			c.emit(code.OpTrue)
 		} else {
 			c.emit(code.OpFalse)
 		}
-	
+
 	case *ast.PrefixExpression:
 		err := c.Compile(node.Right)
 		if err != nil {
 			return err
 		}
-		
-		switch node.Operator{
-			case "!":
-				c.emit(code.OpBang)
-			case "-":
-				c.emit(code.OpMinus)
-			default:
-				return fmt.Errorf("unknown operator %s", node.Operator)
+
+		switch node.Operator {
+		case "!":
+			c.emit(code.OpBang)
+		case "-":
+			c.emit(code.OpMinus)
+		default:
+			return fmt.Errorf("unknown operator %s", node.Operator)
 		}
 
 	case *ast.InfixExpression:
@@ -143,6 +159,74 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.FloatLiteral:
 		floatValue := &object.Float{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(floatValue))
+	case *ast.IfExpression:
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+
+		jumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
+
+		err = c.Compile(node.Consequence)
+		if err != nil {
+			return err
+		}
+
+		if c.lastInstructionIsPop() {
+			c.removeLastPop()
+		}
+
+		afterConseqencePos := len(c.instruction)
+		c.changeOperand(jumpNotTruthyPos, afterConseqencePos)
+
+		// after executing this branch, skip the rest
+		endJumps := []int{}
+		endJumps = append(endJumps, c.emit(code.OpJump, 9999))
+
+		// false of main if goes to here
+		nextBranchPos := len(c.instruction)
+		c.changeOperand(jumpNotTruthyPos, nextBranchPos)
+
+		// compile all elseif branches
+		for _, elseif := range node.IfElse {
+			err := c.Compile(elseif.Condition)
+			if err != nil {
+				return err
+			}
+
+			elseifJumpNotTruthyPos := c.emit(code.OpJumpNotTruthy, 9999)
+
+			err = c.Compile(elseif.Consequence)
+			if err != nil {
+				return err
+			}
+
+			if c.lastInstructionIsPop() {
+				c.removeLastPop()
+			}
+
+			endJumps = append(endJumps, c.emit(code.OpJump, 9999))
+
+			nextBranchPos = len(c.instruction)
+			c.changeOperand(elseifJumpNotTruthyPos, nextBranchPos)
+		}
+
+		if node.Alternative != nil {
+			err := c.Compile(node.Alternative)
+			if err != nil {
+				return err
+			}
+
+			if c.lastInstructionIsPop() {
+				c.removeLastPop()
+			}
+		}
+
+		// patch all jumps to the end
+		afterAllBranchesPos := len(c.instruction)
+		for _, pos := range endJumps {
+			c.changeOperand(pos, afterAllBranchesPos)
+		}
 	}
 
 	return nil
@@ -259,7 +343,17 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.addInstruction(ins)
 
+	c.setLastInstruction(op, pos)
+
 	return pos
+}
+
+func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
+	previous := c.lastInstruction
+	last := EmittedInstruction{Opcode: op, Position: pos}
+
+	c.previousInstruction = previous
+	c.lastInstruction = last
 }
 
 func (c *Compiler) addInstruction(ins []byte) int {
@@ -267,6 +361,28 @@ func (c *Compiler) addInstruction(ins []byte) int {
 	c.instruction = append(c.instruction, ins...)
 
 	return posNewInstruction
+}
+
+func (c *Compiler) lastInstructionIsPop() bool {
+	return c.lastInstruction.Opcode == code.OpPop
+}
+
+func (c *Compiler) removeLastPop() {
+	c.instruction = c.instruction[:c.lastInstruction.Position]
+	c.lastInstruction = c.previousInstruction
+}
+
+func (c *Compiler) replaceInstruction(pos int, newInstruction []byte) {
+	for i := range newInstruction {
+		c.instruction[pos+i] = newInstruction[i]
+	}
+}
+
+func (c *Compiler) changeOperand(opPos int, operand int) {
+	op := code.Opcode(c.instruction[opPos])
+	newInstruction := code.Make(op, operand)
+
+	c.replaceInstruction(opPos, newInstruction)
 }
 
 func (c *Compiler) ByteCode() *Bytecode {

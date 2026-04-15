@@ -220,6 +220,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			if c.lastInstructionIsPop() {
 				c.removeLastPop()
 			}
+		}else {
+			c.emit(code.OpNull)
 		}
 
 		// patch all jumps to the end

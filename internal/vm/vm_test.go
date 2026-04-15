@@ -80,6 +80,10 @@ func testExpectedObject(t *testing.T, expected any, actual object.Object) {
 		if err != nil {
 			t.Errorf("testBooleanObject failed: %s", err)
 		}
+	case *object.Null: 
+		if actual != Null {
+			t.Errorf("object is not Null: %T (%+v)",actual, actual)
+		}
 	}
 }
 
@@ -156,6 +160,10 @@ func testFloatObject(expected float64, actual object.Object) error {
 	return nil
 }
 
+
+
+
+
 func testBooleanObject(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
@@ -203,7 +211,7 @@ func TestBooleanExpression(t *testing.T) {
 	runVmTest(t, tests)
 }
 
-func TestConditionals(t *testing.T){
+func TestConditionals(t *testing.T) {
 	tests := []vmTestCase{
 		{"if (true){10;};", 10},
 		{"if (false) { 10; } else { 20; }; ", 20},
@@ -212,8 +220,11 @@ func TestConditionals(t *testing.T){
 		{"if (1 < 2) { 10; } else { 20; };", 10},
 		{"if (1 > 2) { 10; } else { 20; };", 20},
 		{"if (1 > 2) { 10; } elseif (1 < 2){20;} else { 30; };", 20},
-		{"if (1 > 2) { 10; } elseif(1>3){13;} else { 20; };", 20},	
+		{"if (1 > 2) { 10; } elseif(1>3){13;} else { 20; };", 20},
+		{"if (false) {10;};", Null},
+		{"!(if (false) {5;});", true},
+		{"if ((if (false) { 10; })) { 10; } else { 20; };", 20},
 	}
-	
+
 	runVmTest(t, tests)
 }

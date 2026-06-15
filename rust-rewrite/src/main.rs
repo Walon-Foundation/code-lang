@@ -1,6 +1,8 @@
 mod token;
 mod lexer;
 mod repl;
+mod parser;
+mod ast;
 
 use std::{ fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};

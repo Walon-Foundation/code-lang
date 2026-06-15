@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq,PartialOrd)]
+#[derive(Debug, PartialEq,Clone)]
 pub enum TokenType {
     // Keywords
     Const,
@@ -19,8 +19,8 @@ pub enum TokenType {
     Ident(String),
 
     //Identifiers
-    INT(isize),
-    String,
+    Int(isize),
+    StringType(String),
     Float(f64),
     Char(char),
 
@@ -81,9 +81,8 @@ pub enum TokenType {
 
 pub struct Token {
     pub token_type:TokenType,
-    pub literal:String,
     pub line:usize,
-    pub colum:usize,
+    pub column:usize,
 }
 
 pub fn lookup_ident(ident: &str) -> TokenType {

@@ -8,7 +8,7 @@ pub struct Lexer {
     pub read_position:usize,
     pub ch:char,
     pub line:usize,
-    pub  column:usize,
+    pub column:usize,
 }
 
 impl Lexer {

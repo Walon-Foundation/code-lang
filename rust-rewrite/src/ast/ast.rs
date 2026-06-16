@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::token::token::Token;
 
-
+#[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

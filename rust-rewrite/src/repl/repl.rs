@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::lexer::lexer::Lexer;
 use crate::parser::parser::Parser;
 use crate::evaluator::evaluator::Evaluator;
@@ -18,7 +20,7 @@ pub fn execute(input: String) {
 
     // set up the evaluator and a fresh global scope
     let env = Environment::new();              // Rc<RefCell<Environment>>
-    let evaluator = Evaluator { loop_depth: 0 };
+    let mut evaluator = Evaluator { loop_depth: 0, module_cache:HashMap::new() };
 
     let result = evaluator.eval(&program, &env);
 

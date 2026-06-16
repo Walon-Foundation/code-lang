@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::io::{self, BufRead, Write};
+
+use rustyline::{Editor, error::ReadlineError};
 
 use crate::lexer::lexer::Lexer;
 use crate::parser::parser::Parser;
@@ -7,33 +8,47 @@ use crate::evaluator::evaluator::Evaluator;
 use crate::object::object::{Environment, Object};
 
 pub fn run_repl() {
-    let stdin = io::stdin();
+    let history_path = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .map(|h| format!("{}/.code_lang_history", h))
+        .unwrap_or_else(|_| ".code_lang_history".to_string());
+
+    let mut rl = Editor::<(), _>::new().expect("failed to create line editor");
+    let _ = rl.load_history(&history_path);
+
     let env = Environment::new();
     let mut evaluator = Evaluator { loop_depth: 0, module_cache: HashMap::new() };
 
     loop {
-        print!(">> ");
-        io::stdout().flush().unwrap();
+        match rl.readline(">> ") {
+            Ok(line) => {
+                let input = line.trim().to_string();
+                if input.is_empty() { continue; }
+                rl.add_history_entry(&input).ok();
 
-        let mut line = String::new();
-        match stdin.lock().read_line(&mut line) {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
-        }
+                if input == "exit()" || input == "exit" || input == "quit" {
+                    println!("Exiting...");
+                    break;
+                }
 
-        let input = line.trim().to_string();
-        if input.is_empty() { continue; }
-        if input == "exit" || input == "quit" { break; }
+                let lexer = Lexer::new(input);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program();
 
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program();
-
-        let result = evaluator.eval(&program, &env);
-        if !matches!(result, Object::Null) {
-            println!("{}", result);
+                let result = evaluator.eval(&program, &env);
+                if !matches!(result, Object::Null) {
+                    println!("{}", result);
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("Exiting...");
+                break;
+            }
+            Err(ReadlineError::Eof) | Err(_) => break,
         }
     }
+
+    let _ = rl.save_history(&history_path);
 }
 
 pub fn execute(input: String) {

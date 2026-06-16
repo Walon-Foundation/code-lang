@@ -15,6 +15,10 @@ pub enum Statement {
     Return { value: Expression, line: usize, column: usize },
     Expression { expr: Expression, line: usize, column: usize },
     Block { statements: Vec<Statement>, line: usize, column: usize },
+    Struct { name: Box<Expression>, field:HashMap<String, Expression>},
+    Import { path:String,  },
+    Break,
+    Continue
 }
 
 #[derive(Debug, Clone)]

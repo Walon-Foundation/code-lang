@@ -1,9 +1,32 @@
+[workspace]
+members = ["."]
+
+[workspace.metadata.dist]
+cargo-dist-version = "0.22.1"
+ci = "github"
+installers = ["shell", "powershell"]
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-pc-windows-msvc",
+]
+
 [package]
 name = "code-lang"
 version = "0.1.0"
 edition = "2024"
+description = "A general-purpose interpreted programming language"
+repository = "https://github.com/Walon-Foundation/code-lang"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive"] }
 thiserror = "2.0.18"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

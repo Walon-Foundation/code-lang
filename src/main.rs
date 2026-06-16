@@ -8,20 +8,23 @@ mod evaluator;
 
 use std::{ fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};
-use repl::repl::execute;
+use repl::repl::{execute, run_repl};
 use clap::Parser;
 
 #[derive(Parser)]
 #[command(name = "code-lang")]
 #[command(about = "Interpreter for the code-lang language")]
+#[command(version)]
 struct Cli {
-    file: PathBuf
+    file: Option<PathBuf>,
 }
 
-fn main() -> Result<()>{
+fn main() -> Result<()> {
     let cli = Cli::parse();
-    run_file(&cli.file)?;
-
+    match cli.file {
+        Some(path) => run_file(&path)?,
+        None => run_repl(),
+    }
     Ok(())
 }
 

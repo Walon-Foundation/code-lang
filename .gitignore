@@ -1,6 +1,19 @@
 Todo.md
-*.cl
 TODO.*
-dist/
 log.txt
 start
+
+# code-lang source files (keep out of repo root)
+*.cl
+
+# Rust
+target/
+Cargo.lock
+
+# Go
+dist/
+
+# docs (Next.js)
+docs/.next/
+docs/node_modules/
+docs/.env*.local

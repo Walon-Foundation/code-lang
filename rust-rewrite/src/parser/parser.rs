@@ -157,56 +157,49 @@ impl Parser {
         })
     }
 
-    fn parse_for_expression(&mut self) -> Option<Expression>{
+    fn parse_for_expression(&mut self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        if !self.expect_peak(TokenType::LParan){
+        if !self.expect_peak(TokenType::LParan) {
             return None;
         }
 
-        self.next_token();
+        self.next_token(); // move to init
 
-        if self.expect_peak(TokenType::Semicolon) {
-            return None;
-        }
-
+        // init — parse_statement consumes its own semicolon, leaving cur = ';'
         let init = self.parse_statement()?;
 
-        self.next_token();
-
-        if self.expect_peak(TokenType::Semicolon) {
-            return None;
-        }
+        self.next_token(); // move past ';' to condition
 
         let condition = self.parse_expression(Precedences::Lowest)?;
 
-        self.next_token();
-
-        if self.cur_token_is(&TokenType::RParen) {
+        if !self.expect_peak(TokenType::Semicolon) {
             return None;
         }
+
+        self.next_token(); // move past ';' to post
 
         let post_exp = self.parse_expression(Precedences::Lowest)?;
         let post = Statement::Expression { expr: post_exp, line, column };
 
         if !self.expect_peak(TokenType::RParen) {
-            return None
+            return None;
         }
 
         if !self.expect_peak(TokenType::LBrace) {
-            return None
-        };
+            return None;
+        }
 
         let body = self.parse_block_statement()?;
 
-        Some(Expression::For { 
-            init: Box::from(init), 
-            condition: Box::from(condition), 
+        Some(Expression::For {
+            init: Box::from(init),
+            condition: Box::from(condition),
             post: Box::from(post),
-            body: Box::from(body), 
-            line, 
-            column 
+            body: Box::from(body),
+            line,
+            column,
         })
     }
 
@@ -214,14 +207,17 @@ impl Parser {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        let mut  statements:Vec<Statement> = Vec::new();
-        
-        
+        let mut statements: Vec<Statement> = Vec::new();
+
+        self.next_token(); // advance past '{'
+
         while !self.cur_token_is(&TokenType::RBrace) && !self.cur_token_is(&TokenType::EOF) {
-            let statment = self.parse_statement()?;
-            statements.push(statment);
+            if let Some(stmt) = self.parse_statement() {
+                statements.push(stmt);
+            }
+            self.next_token();
         }
-        
+
         Some(Statement::Block { statements, line, column })
     }
 
@@ -614,8 +610,95 @@ impl Parser {
         match self.cur_token.token_type {
             TokenType::Let    => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
+            TokenType::Import => self.parse_import_statement(),
+            TokenType::Struct => self.parse_struct_statement(),
+            TokenType::Break => self.parse_break_statement(),
+            TokenType::Continue => self.parse_continue_statement(),
+            TokenType::Const => self.parse_const_statement(),
             _                 => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_continue_statement(&mut self) -> Option<Statement> {
+        self.expect_peak(TokenType::Semicolon);
+        Some(Statement::Continue)
+    }
+
+    fn parse_break_statement(&mut self) -> Option<Statement>{
+        self.expect_peak(TokenType::Semicolon);
+        Some(Statement::Break)
+    }
+
+    fn parse_struct_statement(&mut self) -> Option<Statement> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+
+        if !self.expect_peak_ident() {
+            return None;
+        }
+
+        let name = match &self.cur_token.token_type {
+            TokenType::Ident(v) => v.clone(),
+            _ => return None,
+        };
+        let iden = Expression::Ident { value: name, line, column };
+
+        if !self.expect_peak(TokenType::LBrace) {
+            return None;
+        }
+
+        let mut field = HashMap::new();
+
+        while !self.peak_token_is(&TokenType::RBrace) {
+            self.next_token();
+
+            let key = match &self.cur_token.token_type {
+                TokenType::Ident(e) => e.clone(),
+                _ => return None,
+            };
+
+            if !self.expect_peak(TokenType::Colon) {
+                return None;
+            }
+
+            self.next_token();
+            let value = self.parse_expression(Precedences::Lowest)?;
+
+            field.insert(key, value);
+
+            if self.peak_token_is(&TokenType::Comma) {
+                self.next_token();
+            }
+        }
+
+        if !self.expect_peak(TokenType::RBrace) {
+            return None;
+        }
+
+        if !self.expect_peak(TokenType::Semicolon) {
+            return None;
+        }
+
+        Some(Statement::Struct { name: Box::new(iden), field })
+    }
+
+    fn parse_import_statement(&mut self) -> Option<Statement> {
+        if !matches!(self.peak_token.token_type, TokenType::StringType(_)) {
+            self.peak_error(TokenType::StringType(String::new()));
+            return None;
+        }
+        self.next_token();
+
+        let path = match &self.cur_token.token_type {
+            TokenType::StringType(s) => s.clone(),
+            _ => return None,
+        };
+
+        if !self.expect_peak(TokenType::Semicolon) {
+            return None;
+        }
+
+        Some(Statement::Import { path })
     }
     
     fn parse_let_statement(&mut self) -> Option<Statement> {

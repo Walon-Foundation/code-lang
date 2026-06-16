@@ -3,6 +3,8 @@ mod lexer;
 mod repl;
 mod parser;
 mod ast;
+mod object;
+mod evaluator;
 
 use std::{ fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};

@@ -16,6 +16,27 @@ pub struct Evaluator {
 type Env = Rc<RefCell<Environment>>;
 
 impl Evaluator {
+    pub fn new() -> Self {
+        let mut e = Evaluator {
+            loop_depth: 0,
+            module_cache: HashMap::new(),
+        };
+        e.preload_stdlib();
+        e
+    }
+    
+    fn preload_stdlib(&mut self) {
+        self.module_cache.insert("arrays".to_string(),  crate::std_lib::array::module());
+        // self.module_cache.insert("math".to_string(),    crate::std::math::module());
+        // self.module_cache.insert("strings".to_string(), crate::std::strings::module());
+        // self.module_cache.insert("fs".to_string(),      crate::std::fs::module());
+        // self.module_cache.insert("time".to_string(),    crate::std::time::module());
+        // self.module_cache.insert("hash".to_string(),    crate::std::hash::module());
+        // self.module_cache.insert("os".to_string(),      crate::std::os::module());
+        // self.module_cache.insert("json".to_string(),    crate::std::json::module());
+        // self.module_cache.insert("fmt".to_string(),     crate::std::general::module());
+        // http / net — see note
+    }
     pub fn eval(&mut self, node: &Program, env: &Env) -> Object {
         let mut result = Object::Null;
         for stmt in &node.statements {

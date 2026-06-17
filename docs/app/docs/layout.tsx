@@ -1,9 +1,15 @@
 import Link from "next/link";
 
 const NAV = [
-  { label: "Getting started", href: "/docs" },
-  { label: "Language reference", href: "/docs/language" },
-  { label: "Standard library", href: "/docs/stdlib" },
+  { group: "Learn", items: [
+    { label: "Getting started", href: "/docs" },
+    { label: "Language reference", href: "/docs/language" },
+  ]},
+  { group: "Reference", items: [
+    { label: "Standard library", href: "/docs/stdlib" },
+    { label: "Install", href: "/install" },
+    { label: "Changelog", href: "/changelog" },
+  ]},
 ];
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
@@ -20,17 +26,21 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     >
       <aside style={{ width: "180px", flexShrink: 0 }}>
         <nav style={{ position: "sticky", top: "72px", display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-          <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#52525b", marginBottom: "0.5rem" }}>
-            Docs
-          </p>
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{ fontSize: "0.875rem", color: "var(--muted)", textDecoration: "none", padding: "0.3rem 0" }}
-            >
-              {item.label}
-            </Link>
+          {NAV.map((group) => (
+            <div key={group.group} style={{ marginBottom: "1.25rem" }}>
+              <p style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#52525b", marginBottom: "0.375rem" }}>
+                {group.group}
+              </p>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={{ display: "block", fontSize: "0.875rem", color: "var(--muted)", textDecoration: "none", padding: "0.25rem 0" }}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>

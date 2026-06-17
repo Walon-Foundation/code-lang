@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Getting started" };
 
@@ -6,50 +7,84 @@ export default function GettingStarted() {
   return (
     <>
       <h1>Getting started</h1>
-
-      <h2>Prerequisites</h2>
       <p>
-        You need <a href="https://rustup.rs" target="_blank" rel="noopener noreferrer">Rust</a> (stable) installed.
+        code-lang is an interpreted language with a clean syntax and a complete standard library.
+        This guide gets you from zero to running your first script.
       </p>
 
-      <h2>Build from source</h2>
+      <h2>Install</h2>
+      <p>
+        See the full <Link href="/install">install guide</Link> for step-by-step instructions.
+        The short version — build from source with Cargo:
+      </p>
       <pre><code>{`git clone https://github.com/Walon-Foundation/code-lang
 cd code-lang
 cargo build --release`}</code></pre>
-      <p>The binary lands at <code>target/release/code-lang</code>.</p>
+      <p>Binary lands at <code>target/release/code-lang</code>.</p>
 
-      <h2>Run the REPL</h2>
-      <pre><code>./target/release/code-lang</code></pre>
+      <h2>The REPL</h2>
       <p>
-        The REPL keeps history across sessions in <code>~/.code_lang_history</code>.
-        Type <code>exit</code> or press <kbd>Ctrl-C</kbd> to quit.
+        Run <code>code-lang</code> (or <code>./target/release/code-lang</code>) with no arguments to start
+        the interactive shell. History is saved across sessions.
       </p>
-      <pre><code>{`>> let x = 10;
->> x * 2;
-20
+      <pre><code>{`>> let name = "world";
+>> "Hello, " + name + "!";
+Hello, world!
+>> 2 ** 10;
+1024
 >> exit`}</code></pre>
+      <p>Exit with <code>exit</code>, <code>exit()</code>, or <kbd>Ctrl-C</kbd>.</p>
 
-      <h2>Run a script</h2>
-      <p>Scripts must use the <code>.cl</code> extension.</p>
-      <pre><code>./target/release/code-lang hello.cl</code></pre>
-
-      <h2>Hello, world</h2>
-      <p>Create <code>hello.cl</code>:</p>
-      <pre><code>{`import "fmt";
-
-fmt.print("Hello, world!");`}</code></pre>
-      <pre><code>./target/release/code-lang hello.cl
-Hello, world!</code></pre>
-
-      <h2>Errors</h2>
+      <h2>Your first script</h2>
       <p>
-        Errors show the line, column, and the offending source line with a caret so you know exactly where the problem is:
+        Scripts use the <code>.cl</code> extension. Create <code>hello.cl</code>:
+      </p>
+      <pre><code>{`import "fmt";
+import "math";
+
+let greet = fn(name) {
+    fmt.print("Hello, " + name + "!");
+};
+
+greet("world");
+fmt.print("pi ≈", math.PI);`}</code></pre>
+      <p>Run it:</p>
+      <pre><code>{`code-lang hello.cl
+Hello, world!
+pi ≈ 3.141592653589793`}</code></pre>
+
+      <h2>Importing modules</h2>
+      <p>
+        All standard library modules are built in — no installation or setup needed.
+        Import any module by name and call its functions with dot notation:
+      </p>
+      <pre><code>{`import "strings";
+import "arrays";
+import "json";
+
+strings.to_upper("hello");        # HELLO
+arrays.sort([3, 1, 4, 1, 5]);    # [1, 1, 3, 4, 5]
+json.stringify({"ok": true});     # {"ok":true}`}</code></pre>
+      <p>
+        See the <Link href="/docs/stdlib">standard library reference</Link> for all 12 modules.
+      </p>
+
+      <h2>Error format</h2>
+      <p>
+        Errors include the source line and a caret pointing to the exact position:
       </p>
       <pre><code>{`error: identifier not found: foo
  --> 3:9
   |
 3 | let x = foo + 1;
   |         ^`}</code></pre>
+      <p>Script mode exits with code <code>1</code> on any error so you can detect failures in shell scripts.</p>
+
+      <h2>Next steps</h2>
+      <p>
+        Read the <Link href="/docs/language">language reference</Link> for a complete guide to syntax,
+        types, functions, structs, and modules.
+      </p>
     </>
   );
 }

@@ -17,6 +17,8 @@ const navLinks = [
   { label: "Docs", href: "/docs" },
   { label: "Language", href: "/docs/language" },
   { label: "Stdlib", href: "/docs/stdlib" },
+  { label: "Changelog", href: "/changelog" },
+  { label: "Install", href: "/install" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -101,11 +103,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span>code-lang — MIT License</span>
             </div>
             <div style={{ display: "flex", gap: "1.5rem" }}>
-              <a href="https://github.com/Walon-Foundation/code-lang" target="_blank" rel="noopener noreferrer" style={{ color: "#52525b", textDecoration: "none" }}>
-                GitHub
-              </a>
+              <a href="https://github.com/Walon-Foundation/code-lang" target="_blank" rel="noopener noreferrer" style={{ color: "#52525b", textDecoration: "none" }}>GitHub</a>
               <Link href="/docs" style={{ color: "#52525b", textDecoration: "none" }}>Docs</Link>
               <Link href="/docs/stdlib" style={{ color: "#52525b", textDecoration: "none" }}>Stdlib</Link>
+              <Link href="/changelog" style={{ color: "#52525b", textDecoration: "none" }}>Changelog</Link>
+              <Link href="/install" style={{ color: "#52525b", textDecoration: "none" }}>Install</Link>
             </div>
           </div>
         </footer>

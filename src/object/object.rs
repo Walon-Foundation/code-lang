@@ -2,6 +2,12 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::ast::ast::{Expression, Statement};
 
+#[derive(Debug, Clone, Copy)]
+pub struct CallInfo {
+    pub line: usize,
+    pub column: usize,
+}
+
 #[derive(Clone)]
 pub enum Object {
     Integer(i64),
@@ -34,7 +40,7 @@ pub enum Object {
     },
     Array(Vec<Object>),
     Hash(Vec<(Object, Object)>),
-    Builtin(fn(Vec<Object>) -> Object)
+    Builtin(fn(Vec<Object>, CallInfo) -> Object)
 }
 
 impl std::fmt::Debug for Object {

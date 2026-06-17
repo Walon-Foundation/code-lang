@@ -8,7 +8,7 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const SITE_URL = "https://code-lang.dev";
+const SITE_URL = "https://code-lang.walonfoundation.com";
 const DESCRIPTION = "A general-purpose interpreted programming language written in Rust.";
 
 export const viewport: Viewport = {

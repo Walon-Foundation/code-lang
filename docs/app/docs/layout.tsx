@@ -14,17 +14,8 @@ const NAV = [
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        maxWidth: "1100px",
-        margin: "0 auto",
-        padding: "3rem 1.5rem",
-        display: "flex",
-        gap: "4rem",
-        alignItems: "flex-start",
-      }}
-    >
-      <aside style={{ width: "180px", flexShrink: 0 }}>
+    <div className="docs-layout">
+      <aside className="docs-sidebar-col">
         <nav style={{ position: "sticky", top: "72px", display: "flex", flexDirection: "column", gap: "0.125rem" }}>
           {NAV.map((group) => (
             <div key={group.group} style={{ marginBottom: "1.25rem" }}>

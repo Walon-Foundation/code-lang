@@ -4,11 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = { title: "Install" };
 
 const S = {
-  page: {
-    maxWidth: "1100px",
-    margin: "0 auto",
-    padding: "4rem 1.5rem 6rem",
-  } as React.CSSProperties,
+  page: {} as React.CSSProperties,
   badge: {
     display: "inline-block",
     fontSize: "0.75rem",
@@ -119,7 +115,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 
 export default function InstallPage() {
   return (
-    <div style={S.page}>
+    <div className="pw s-page" style={S.page}>
       <div style={S.badge}>Installation guide</div>
       <h1 style={S.h1}>Install code-lang</h1>
       <p style={S.lead}>

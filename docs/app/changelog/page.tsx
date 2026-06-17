@@ -96,7 +96,7 @@ function TagBadge({ tag }: { tag: "release" | "dev" }) {
 
 export default function ChangelogPage() {
   return (
-    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "4rem 1.5rem 6rem" }}>
+    <div className="pw s-page">
       {/* Header */}
       <div
         style={{
@@ -133,9 +133,9 @@ export default function ChangelogPage() {
       {/* Entries */}
       <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
         {CHANGELOG.map((entry) => (
-          <div key={entry.version} style={{ display: "flex", gap: "3rem" }}>
+          <div key={entry.version} className="log-entry">
             {/* Sidebar */}
-            <div style={{ width: "160px", flexShrink: 0, paddingTop: "0.25rem" }}>
+            <div className="log-sidebar">
               <p
                 style={{
                   fontFamily: "var(--font-mono)",

@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const W = { maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem" } as const;
-
 const EXAMPLE = `import "fmt";
 import "math";
 import "strings";
@@ -61,7 +59,7 @@ export default function Home() {
   return (
     <main>
       {/* ── Hero ─────────────────────────────────────── */}
-      <section style={{ ...W, paddingTop: "6rem", paddingBottom: "5rem" }}>
+      <section className="pw s-hero">
         {/* Badge */}
         <div
           style={{
@@ -121,7 +119,7 @@ export default function Home() {
         </p>
 
         {/* CTAs */}
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+        <div className="cta-row">
           <Link
             href="/docs"
             style={{
@@ -166,7 +164,7 @@ export default function Home() {
 
       {/* ── Code showcase ────────────────────────────── */}
       <section style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
-        <div style={{ ...W, paddingTop: "2.5rem", paddingBottom: "2.5rem" }}>
+        <div className="pw s-md">
           {/* Terminal chrome */}
           <div
             style={{
@@ -208,7 +206,7 @@ export default function Home() {
       </section>
 
       {/* ── Features ─────────────────────────────────── */}
-      <section style={{ ...W, paddingTop: "5rem", paddingBottom: "5rem" }}>
+      <section className="pw s-lg">
         <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#52525b", marginBottom: "1rem" }}>
           Why code-lang
         </p>
@@ -266,7 +264,7 @@ export default function Home() {
 
       {/* ── Stdlib strip ─────────────────────────────── */}
       <section style={{ borderTop: "1px solid var(--border)", background: "var(--surface)" }}>
-        <div style={{ ...W, paddingTop: "3rem", paddingBottom: "3rem" }}>
+        <div className="pw s-md">
           <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginBottom: "1.25rem" }}>
             12 built-in modules — import any of them with a single line:
           </p>
@@ -294,7 +292,7 @@ export default function Home() {
       </section>
 
       {/* ── Install ──────────────────────────────────── */}
-      <section style={{ ...W, paddingTop: "5rem", paddingBottom: "5rem" }}>
+      <section className="pw s-lg">
         <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "2rem" }}>
           Install
         </h2>

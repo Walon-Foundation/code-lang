@@ -49,7 +49,7 @@ age = 26;      # ok
 PI  = 3;       # error: cannot reassign constant`}</code></pre>
 
       <h2>Types</h2>
-      <table>
+      <div className="tbl"><table>
         <thead><tr><th>Type</th><th>Literal example</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td>Integer</td><td><code>42</code>, <code>-7</code></td><td>64-bit signed</td></tr>
@@ -63,10 +63,10 @@ PI  = 3;       # error: cannot reassign constant`}</code></pre>
           <tr><td>Function</td><td><code>fn(x) {"{ x * 2 }"}</code></td><td>First-class value</td></tr>
           <tr><td>Struct</td><td><code>Point {"{ x: 1 }"}</code></td><td>Typed object with defaults</td></tr>
         </tbody>
-      </table>
+      </table></div>
 
       <h2>Operators</h2>
-      <table>
+      <div className="tbl"><table>
         <thead><tr><th>Category</th><th>Operators</th></tr></thead>
         <tbody>
           <tr><td>Arithmetic</td><td><code>+ - * / %</code> · <code>**</code> power · <code>//</code> floor division</td></tr>
@@ -76,7 +76,7 @@ PI  = 3;       # error: cannot reassign constant`}</code></pre>
           <tr><td>Increment / decrement</td><td><code>++</code> <code>--</code> prefix and postfix</td></tr>
           <tr><td>String concat</td><td><code>+</code> — works between strings</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <pre><code>{`2 ** 8;       # 256
 17 // 5;      # 3  (floor division)
 10 % 3;       # 1

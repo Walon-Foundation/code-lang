@@ -22,30 +22,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <div style={{ flex: 1 }}>{children}</div>
 
-        <footer style={{ borderTop: "1px solid var(--border)", marginTop: "6rem" }}>
-          <div
-            style={{
-              maxWidth: "1100px",
-              margin: "0 auto",
-              padding: "1.75rem 1.5rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              fontSize: "0.8125rem",
-              color: "#52525b",
-            }}
-          >
+        <footer className="site-footer">
+          <div className="pw site-footer-inner">
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <Image src="/logo.svg" alt="" width={18} height={18} style={{ opacity: 0.5 }} />
               <span>code-lang — MIT License</span>
             </div>
-            <div style={{ display: "flex", gap: "1.5rem" }}>
-              <a href="https://github.com/Walon-Foundation/code-lang" target="_blank" rel="noopener noreferrer" style={{ color: "#52525b", textDecoration: "none" }}>GitHub</a>
-              <Link href="/docs" style={{ color: "#52525b", textDecoration: "none" }}>Docs</Link>
-              <Link href="/docs/stdlib" style={{ color: "#52525b", textDecoration: "none" }}>Stdlib</Link>
-              <Link href="/changelog" style={{ color: "#52525b", textDecoration: "none" }}>Changelog</Link>
-              <Link href="/install" style={{ color: "#52525b", textDecoration: "none" }}>Install</Link>
-            </div>
+            <nav className="footer-links">
+              <a href="https://github.com/Walon-Foundation/code-lang" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <Link href="/docs">Docs</Link>
+              <Link href="/docs/stdlib">Stdlib</Link>
+              <Link href="/changelog">Changelog</Link>
+              <Link href="/install">Install</Link>
+            </nav>
           </div>
         </footer>
       </body>

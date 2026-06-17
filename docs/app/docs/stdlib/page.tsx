@@ -200,7 +200,7 @@ strings.to_upper("hello");  # HELLO`}</code></pre>
             <code>{mod.name}</code>
           </h2>
           <p>{mod.desc}</p>
-          <table>
+          <div className="tbl"><table>
             <thead>
               <tr>
                 <th>Function / value</th>
@@ -215,7 +215,7 @@ strings.to_upper("hello");  # HELLO`}</code></pre>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
       ))}
     </>

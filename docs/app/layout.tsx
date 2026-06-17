@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,10 +8,53 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const SITE_URL = "https://code-lang.dev";
+const DESCRIPTION = "A general-purpose interpreted programming language written in Rust.";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#09090b",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "code-lang", template: "%s — code-lang" },
-  description: "A general-purpose interpreted programming language written in Rust.",
+  description: DESCRIPTION,
+  keywords: [
+    "programming language",
+    "interpreter",
+    "scripting language",
+    "rust",
+    "code-lang",
+    ".cl files",
+    "open source",
+  ],
+  authors: [{ name: "Walon Foundation", url: "https://github.com/Walon-Foundation" }],
+  creator: "Walon Foundation",
   icons: { icon: "/icon.svg" },
+  manifest: "/manifest.webmanifest",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: "code-lang",
+    title: "code-lang",
+    description: DESCRIPTION,
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "code-lang" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "code-lang",
+    description: DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
+  alternates: { canonical: SITE_URL },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

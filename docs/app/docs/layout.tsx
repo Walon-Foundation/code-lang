@@ -1,7 +1,4 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-
-export const metadata: Metadata = { title: "Docs" };
 
 const NAV = [
   { label: "Getting started", href: "/docs" },
@@ -11,21 +8,33 @@ const NAV = [
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 flex gap-12 flex-1">
-      <aside className="w-44 shrink-0">
-        <nav className="flex flex-col gap-1 sticky top-8">
+    <div
+      style={{
+        maxWidth: "1100px",
+        margin: "0 auto",
+        padding: "3rem 1.5rem",
+        display: "flex",
+        gap: "4rem",
+        alignItems: "flex-start",
+      }}
+    >
+      <aside style={{ width: "180px", flexShrink: 0 }}>
+        <nav style={{ position: "sticky", top: "72px", display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+          <p style={{ fontSize: "0.6875rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#52525b", marginBottom: "0.5rem" }}>
+            Docs
+          </p>
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 py-1 transition-colors"
+              style={{ fontSize: "0.875rem", color: "var(--muted)", textDecoration: "none", padding: "0.3rem 0" }}
             >
               {item.label}
             </Link>
           ))}
         </nav>
       </aside>
-      <article className="docs-content flex-1 min-w-0 max-w-none">
+      <article className="docs-content" style={{ flex: 1, minWidth: 0 }}>
         {children}
       </article>
     </div>

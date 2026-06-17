@@ -1,100 +1,336 @@
+import Image from "next/image";
 import Link from "next/link";
+
+const W = { maxWidth: "1100px", margin: "0 auto", padding: "0 1.5rem" } as const;
 
 const EXAMPLE = `import "fmt";
 import "math";
-
-let greet = fn(name) {
-    fmt.print("Hello, " + name + "!");
-};
+import "strings";
 
 struct Point {
     x: 0,
     y: 0,
 }
 
-let p = Point { x: 3, y: 4 };
-let dist = math.sqrt(p.x ** 2 + p.y ** 2);
+let distance = fn(p) {
+    return math.sqrt(p.x ** 2 + p.y ** 2);
+};
 
-greet("world");
-fmt.print("distance:", dist);`;
+let p = Point { x: 3, y: 4 };
+
+fmt.print("point:", p.x, p.y);
+fmt.print("distance:", distance(p));
+fmt.print("tag:", strings.to_upper("code-lang"));`;
 
 const FEATURES = [
-  { title: "Familiar syntax", body: "C-style braces, fn for functions, let/const for variables. Readable from day one." },
-  { title: "First-class functions", body: "Functions are values. Pass them around, return them, close over variables." },
-  { title: "Structs", body: "Define custom types with default field values and dot-notation access." },
-  { title: "Rich standard library", body: "math, strings, arrays, hash, fs, os, time, json, http, rand, path — all built in." },
-  { title: "Module system", body: "Import stdlib modules or your own .cl files. Simple, flat, no namespacing headaches." },
-  { title: "Helpful errors", body: "Line, column, and source context on every error — so you know exactly where to look." },
+  {
+    icon: "⟨ ⟩",
+    title: "Familiar syntax",
+    body: "C-style braces, fn, let/const. Reads like the languages you already know.",
+  },
+  {
+    icon: "λ",
+    title: "First-class functions",
+    body: "Functions are values. Closures, higher-order, recursion — all built in.",
+  },
+  {
+    icon: "◈",
+    title: "Structs",
+    body: "Define types with default fields. Dot-notation access. No boilerplate.",
+  },
+  {
+    icon: "◻",
+    title: "12 stdlib modules",
+    body: "math, strings, arrays, fs, http, json, time, rand, os, hash, path, fmt — ready to import.",
+  },
+  {
+    icon: "⌗",
+    title: "Module system",
+    body: "Import any stdlib module or your own .cl files. Flat, simple, no surprises.",
+  },
+  {
+    icon: "↯",
+    title: "Precise errors",
+    body: "Every error shows the source line and a caret — you see exactly where it went wrong.",
+  },
 ];
+
+const MODULES = ["fmt", "math", "strings", "arrays", "hash", "fs", "path", "os", "time", "json", "rand", "http"];
 
 export default function Home() {
   return (
-    <main className="flex-1">
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 py-24">
-        <div className="max-w-2xl">
-          <div className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 mb-6">
-            Active development · v0.1
-          </div>
-          <h1 className="text-5xl font-semibold tracking-tight leading-tight mb-6">
-            A clean, expressive<br />language in Rust.
-          </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-10 leading-relaxed">
-            code-lang is a general-purpose interpreted language with first-class functions,
-            structs, a growing standard library, and errors that actually point you to the problem.
-          </p>
-          <div className="flex gap-3">
-            <Link
-              href="/docs"
-              className="h-10 px-5 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-lg text-sm font-medium flex items-center hover:bg-zinc-700 dark:hover:bg-zinc-200 transition-colors"
+    <main>
+      {/* ── Hero ─────────────────────────────────────── */}
+      <section style={{ ...W, paddingTop: "6rem", paddingBottom: "5rem" }}>
+        {/* Badge */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            fontSize: "0.75rem",
+            fontWeight: 500,
+            color: "#818cf8",
+            background: "rgba(129,140,248,0.08)",
+            border: "1px solid rgba(129,140,248,0.2)",
+            borderRadius: "100px",
+            padding: "0.25rem 0.75rem",
+            marginBottom: "1.75rem",
+          }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#818cf8", display: "inline-block" }} />
+          Active development · v0.1
+        </div>
+
+        {/* Headline */}
+        <h1
+          style={{
+            fontSize: "clamp(2.5rem, 6vw, 4rem)",
+            fontWeight: 700,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.1,
+            color: "var(--text)",
+            maxWidth: "680px",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Code that reads{" "}
+          <span
+            style={{
+              background: "linear-gradient(135deg, #818cf8, #22d3ee)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            like you think.
+          </span>
+        </h1>
+
+        <p
+          style={{
+            fontSize: "1.125rem",
+            color: "var(--muted)",
+            lineHeight: 1.75,
+            maxWidth: "520px",
+            marginBottom: "2.5rem",
+          }}
+        >
+          code-lang is a general-purpose interpreted language built in Rust — fast to learn,
+          with first-class functions, structs, and a complete standard library.
+        </p>
+
+        {/* CTAs */}
+        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+          <Link
+            href="/docs"
+            style={{
+              height: "2.5rem",
+              padding: "0 1.25rem",
+              background: "linear-gradient(135deg, #6366f1, #06b6d4)",
+              color: "#fff",
+              borderRadius: "8px",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Get started →
+          </Link>
+          <a
+            href="https://github.com/Walon-Foundation/code-lang"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              height: "2.5rem",
+              padding: "0 1.25rem",
+              background: "var(--surface)",
+              color: "var(--muted)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
+            View on GitHub
+          </a>
+        </div>
+      </section>
+
+      {/* ── Code showcase ────────────────────────────── */}
+      <section style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
+        <div style={{ ...W, paddingTop: "2.5rem", paddingBottom: "2.5rem" }}>
+          {/* Terminal chrome */}
+          <div
+            style={{
+              borderRadius: "10px",
+              border: "1px solid var(--border)",
+              overflow: "hidden",
+              background: "#0d0d0f",
+            }}
+          >
+            <div
+              style={{
+                padding: "0.6rem 1rem",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
             >
-              Get started
-            </Link>
-            <Link
-              href="/docs/language"
-              className="h-10 px-5 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium flex items-center hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors"
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ffbd2e" }} />
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28ca42" }} />
+              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#52525b" }}>hello.cl</span>
+            </div>
+            <pre
+              style={{
+                margin: 0,
+                padding: "1.5rem",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.875rem",
+                lineHeight: 1.75,
+                color: "#c4b5fd",
+                overflowX: "auto",
+              }}
             >
-              Language reference
-            </Link>
+              <code style={{ color: "#d4d4d8" }}>{EXAMPLE}</code>
+            </pre>
           </div>
         </div>
       </section>
 
-      {/* Code example */}
-      <section className="bg-zinc-950 border-y border-zinc-800">
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <pre className="font-mono text-sm text-zinc-300 leading-relaxed overflow-x-auto">
-            <code>{EXAMPLE}</code>
-          </pre>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
-        <h2 className="text-2xl font-semibold tracking-tight mb-12">Why code-lang?</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* ── Features ─────────────────────────────────── */}
+      <section style={{ ...W, paddingTop: "5rem", paddingBottom: "5rem" }}>
+        <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#52525b", marginBottom: "1rem" }}>
+          Why code-lang
+        </p>
+        <h2
+          style={{
+            fontSize: "1.875rem",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: "var(--text)",
+            marginBottom: "3rem",
+            maxWidth: "480px",
+            lineHeight: 1.2,
+          }}
+        >
+          Everything you need, nothing you don&apos;t.
+        </h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1px",
+            background: "var(--border)",
+            border: "1px solid var(--border)",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}
+        >
           {FEATURES.map((f) => (
-            <div key={f.title}>
-              <h3 className="font-medium mb-2">{f.title}</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{f.body}</p>
+            <div
+              key={f.title}
+              style={{
+                background: "var(--bg)",
+                padding: "1.75rem",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "1.125rem",
+                  color: "#818cf8",
+                  marginBottom: "0.875rem",
+                  lineHeight: 1,
+                }}
+              >
+                {f.icon}
+              </div>
+              <h3 style={{ fontSize: "0.9375rem", fontWeight: 600, color: "var(--text)", marginBottom: "0.4rem" }}>
+                {f.title}
+              </h3>
+              <p style={{ fontSize: "0.875rem", color: "var(--muted)", lineHeight: 1.65, margin: 0 }}>{f.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Quick install */}
-      <section className="bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <h2 className="text-2xl font-semibold tracking-tight mb-4">Install</h2>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-6">Build from source with Cargo:</p>
-          <pre className="font-mono text-sm bg-zinc-950 text-zinc-200 rounded-lg px-5 py-4 inline-block">
-            <code>{"git clone https://github.com/Walon-Foundation/code-lang\ncd code-lang && cargo build --release"}</code>
-          </pre>
-          <p className="mt-6 text-sm text-zinc-600 dark:text-zinc-400">
-            Then run the REPL with <code className="font-mono">./target/release/code-lang</code> or a script with{" "}
-            <code className="font-mono">./target/release/code-lang hello.cl</code>.
+      {/* ── Stdlib strip ─────────────────────────────── */}
+      <section style={{ borderTop: "1px solid var(--border)", background: "var(--surface)" }}>
+        <div style={{ ...W, paddingTop: "3rem", paddingBottom: "3rem" }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--muted)", marginBottom: "1.25rem" }}>
+            12 built-in modules — import any of them with a single line:
           </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {MODULES.map((m) => (
+              <Link
+                key={m}
+                href="/docs/stdlib"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.8125rem",
+                  color: "#22d3ee",
+                  background: "rgba(34,211,238,0.06)",
+                  border: "1px solid rgba(34,211,238,0.15)",
+                  borderRadius: "6px",
+                  padding: "0.25rem 0.625rem",
+                  textDecoration: "none",
+                }}
+              >
+                {`import "${m}"`}
+              </Link>
+            ))}
+          </div>
         </div>
+      </section>
+
+      {/* ── Install ──────────────────────────────────── */}
+      <section style={{ ...W, paddingTop: "5rem", paddingBottom: "5rem" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "2rem" }}>
+          Install
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
+          {/* Build */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "0.625rem 1rem", borderBottom: "1px solid var(--border)", fontSize: "0.75rem", color: "#52525b", fontWeight: 500 }}>
+              Build from source
+            </div>
+            <pre style={{ margin: 0, padding: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "#d4d4d8", lineHeight: 1.7 }}>
+              <code>{`git clone https://github.com/Walon-Foundation/code-lang
+cd code-lang
+cargo build --release`}</code>
+            </pre>
+          </div>
+          {/* Run */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "10px", overflow: "hidden" }}>
+            <div style={{ padding: "0.625rem 1rem", borderBottom: "1px solid var(--border)", fontSize: "0.75rem", color: "#52525b", fontWeight: 500 }}>
+              Run it
+            </div>
+            <pre style={{ margin: 0, padding: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "#d4d4d8", lineHeight: 1.7 }}>
+              <code>{`# Start the REPL
+./target/release/code-lang
+
+# Run a script
+./target/release/code-lang hello.cl`}</code>
+            </pre>
+          </div>
+        </div>
+        <p style={{ fontSize: "0.875rem", color: "#52525b", marginTop: "1.5rem" }}>
+          Requires{" "}
+          <a href="https://rustup.rs" target="_blank" rel="noopener noreferrer" style={{ color: "#818cf8" }}>
+            Rust (stable)
+          </a>
+          .
+        </p>
       </section>
     </main>
   );

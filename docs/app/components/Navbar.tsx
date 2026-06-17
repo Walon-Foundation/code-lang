@@ -7,10 +7,8 @@ import { usePathname } from "next/navigation";
 
 const navLinks = [
   { label: "Docs", href: "/docs" },
-  { label: "Language", href: "/docs/language" },
-  { label: "Stdlib", href: "/docs/stdlib" },
-  { label: "Changelog", href: "/changelog" },
   { label: "Install", href: "/install" },
+  { label: "Changelog", href: "/changelog" },
 ];
 
 export default function Navbar() {

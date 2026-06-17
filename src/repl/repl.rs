@@ -5,6 +5,26 @@ use crate::parser::parser::Parser;
 use crate::evaluator::evaluator::Evaluator;
 use crate::object::object::{Environment, Object};
 
+fn show_error(source: &str, message: &str, line: usize, column: usize) {
+    eprintln!("error: {}", message);
+
+    let lines: Vec<&str> = source.lines().collect();
+    if line == 0 || line > lines.len() {
+        return;
+    }
+
+    let src_line = lines[line - 1];
+    let line_str = line.to_string();
+    let gutter = line_str.len();
+
+    eprintln!(" {}--> {}:{}", " ".repeat(gutter), line, column);
+    eprintln!(" {} |", " ".repeat(gutter));
+    eprintln!(" {} | {}", line_str, src_line);
+
+    let caret_pos = column.saturating_sub(1);
+    eprintln!(" {} | {}^", " ".repeat(gutter), " ".repeat(caret_pos));
+}
+
 pub fn run_repl() {
     let history_path = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
@@ -29,13 +49,17 @@ pub fn run_repl() {
                     break;
                 }
 
-                let lexer = Lexer::new(input);
+                let lexer = Lexer::new(input.clone());
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program();
 
                 let result = evaluator.eval(&program, &env);
-                if !matches!(result, Object::Null) {
-                    println!("{}", result);
+                match result {
+                    Object::Error { ref message, line, column } => {
+                        show_error(&input, message, line, column);
+                    }
+                    Object::Null => {}
+                    other => println!("{}", other),
                 }
             }
             Err(ReadlineError::Interrupted) => {
@@ -50,24 +74,27 @@ pub fn run_repl() {
 }
 
 pub fn execute(input: String) {
-    let lexer = Lexer::new(input);
+    let lexer = Lexer::new(input.clone());
     let mut parser = Parser::new(lexer);
     let program = parser.parse_program();
 
-    // stop if parsing failed — don't evaluate a broken tree
-    // if !parser.errors.is_empty() {
-    //     for err in &parser.errors {
-    //         eprintln!("{}", err);
-    //     }
-    //     return;
-    // }
+    if !parser.errors.is_empty() {
+        for err in &parser.errors {
+            eprintln!("parse error: {}", err);
+        }
+        std::process::exit(1);
+    }
 
-    // set up the evaluator and a fresh global scope
-    let env = Environment::new();              // Rc<RefCell<Environment>>
+    let env = Environment::new();
     let mut evaluator = Evaluator::new();
-
     let result = evaluator.eval(&program, &env);
 
-    // show the program's result
-    println!("{}", result);          // or however you render Object
+    match result {
+        Object::Error { ref message, line, column } => {
+            show_error(&input, message, line, column);
+            std::process::exit(1);
+        }
+        Object::Null => {}
+        other => println!("{}", other),
+    }
 }

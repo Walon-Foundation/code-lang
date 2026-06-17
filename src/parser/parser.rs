@@ -24,7 +24,7 @@ pub enum Precedences {
 #[derive(Debug)]
 pub struct Parser {
     l: Lexer,
-    errors: Vec<String>,
+    pub errors: Vec<String>,
     cur_token:Token,
     peak_token:Token,
 }

@@ -20,7 +20,7 @@ impl Lexer {
             self.ch = self.input[self.read_position];
             if self.ch == '\n'{
                 self.line += 1;
-                self.column += 1;
+                self.column = 0;
             }else {
                 self.column += 1;
             }

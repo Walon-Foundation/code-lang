@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rustyline::{Editor, error::ReadlineError};
 
 use crate::lexer::lexer::Lexer;
@@ -17,7 +15,7 @@ pub fn run_repl() {
     let _ = rl.load_history(&history_path);
 
     let env = Environment::new();
-    let mut evaluator = Evaluator { loop_depth: 0, module_cache: HashMap::new() };
+    let mut evaluator = Evaluator::new();
 
     loop {
         match rl.readline(">> ") {
@@ -66,7 +64,7 @@ pub fn execute(input: String) {
 
     // set up the evaluator and a fresh global scope
     let env = Environment::new();              // Rc<RefCell<Environment>>
-    let mut evaluator = Evaluator { loop_depth: 0, module_cache:HashMap::new() };
+    let mut evaluator = Evaluator::new();
 
     let result = evaluator.eval(&program, &env);
 

@@ -5,6 +5,7 @@ mod parser;
 mod ast;
 mod object;
 mod evaluator;
+mod std_lib;
 
 use std::{ fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};

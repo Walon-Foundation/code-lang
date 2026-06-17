@@ -387,3 +387,47 @@ body {
   padding: 0.1em 0.4em;
   color: var(--text);
 }
+
+/* ─── Syntax highlighting tokens ─────────────────── */
+
+.hl-k { color: #c084fc; }          /* keyword */
+.hl-s { color: #86efac; }          /* string / char */
+.hl-n { color: #fb923c; }          /* number */
+.hl-c { color: #52525b; font-style: italic; } /* comment */
+.hl-f { color: #67e8f9; }          /* function call */
+
+/* ─── Copy button ────────────────────────────────── */
+
+.pre-wrap {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.pre-wrap > pre {
+  margin-bottom: 0;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  z-index: 1;
+}
+
+.pre-wrap:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--text); border-color: #52525b; }
+
+/* ─── Active navbar link ─────────────────────────── */
+
+.nav-link-active { color: var(--text) !important; }
+.nav-mobile-link-active { color: var(--text) !important; }

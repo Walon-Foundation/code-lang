@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Pre from "../../components/Pre";
 
 export const metadata: Metadata = { title: "Standard library" };
 
@@ -188,11 +189,11 @@ export default function StdlibReference() {
       <p>
         All stdlib modules are preloaded — no installation needed. Import a module by name and use dot notation to call its functions.
       </p>
-      <pre><code>{`import "math";
+      <Pre>{`import "math";
 import "strings";
 
 math.sqrt(9);               # 3.0
-strings.to_upper("hello");  # HELLO`}</code></pre>
+strings.to_upper("hello");  # HELLO`}</Pre>
 
       {MODULES.map((mod) => (
         <section key={mod.name}>

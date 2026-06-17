@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Pre from "../../components/Pre";
 
 export const metadata: Metadata = { title: "Language reference" };
 
@@ -32,21 +33,21 @@ export default function LanguageReference() {
       </p>
 
       <h2>Comments</h2>
-      <pre><code>{`# single-line comment
+      <Pre>{`# single-line comment
 
 /* multi-line
-   comment */`}</code></pre>
+   comment */`}</Pre>
 
       <h2>Variables</h2>
       <p>
         <code>let</code> declares a mutable variable. <code>const</code> declares a constant —
         reassignment is a runtime error.
       </p>
-      <pre><code>{`let age = 25;
+      <Pre>{`let age = 25;
 const PI = 3.14159;
 
 age = 26;      # ok
-PI  = 3;       # error: cannot reassign constant`}</code></pre>
+PI  = 3;       # error: cannot reassign constant`}</Pre>
 
       <h2>Types</h2>
       <div className="tbl"><table>
@@ -77,19 +78,19 @@ PI  = 3;       # error: cannot reassign constant`}</code></pre>
           <tr><td>String concat</td><td><code>+</code> — works between strings</td></tr>
         </tbody>
       </table></div>
-      <pre><code>{`2 ** 8;       # 256
+      <Pre>{`2 ** 8;       # 256
 17 // 5;      # 3  (floor division)
 10 % 3;       # 1
 
 let n = 5;
 n++;          # n is now 6
-n += 10;      # n is now 16`}</code></pre>
+n += 10;      # n is now 16`}</Pre>
 
       <h2>Control flow</h2>
 
       <h3>if / elseif / else</h3>
       <Note>Branches are expressions — the last evaluated value is the result of the whole block.</Note>
-      <pre><code>{`let score = 85;
+      <Pre>{`let score = 85;
 
 if (score >= 90) {
     "A"
@@ -97,75 +98,75 @@ if (score >= 90) {
     "B"
 } else {
     "C"
-};`}</code></pre>
+};`}</Pre>
 
       <h3>while</h3>
-      <pre><code>{`let i = 0;
+      <Pre>{`let i = 0;
 while (i < 5) {
     i += 1;
-};`}</code></pre>
+};`}</Pre>
 
       <h3>for</h3>
-      <pre><code>{`for (let i = 0; i < 5; i++) {
+      <Pre>{`for (let i = 0; i < 5; i++) {
     if (i == 2) { continue; };
     if (i == 4) { break; };
-};`}</code></pre>
+};`}</Pre>
       <p><code>break</code> and <code>continue</code> work in both <code>while</code> and <code>for</code>.</p>
 
       <h2>Functions</h2>
       <p>Functions are values. Assign them with <code>let</code> or <code>const</code>. Return early with <code>return</code> — the last expression in a block is also returned implicitly.</p>
-      <pre><code>{`let add = fn(a, b) {
+      <Pre>{`let add = fn(a, b) {
     return a + b;
 };
 
 let square = fn(x) { x * x };   # implicit return
 
 add(3, 4);      # 7
-square(9);      # 81`}</code></pre>
+square(9);      # 81`}</Pre>
 
       <h3>Closures</h3>
       <p>Functions close over the enclosing scope and capture variables by reference.</p>
-      <pre><code>{`let make_adder = fn(n) {
+      <Pre>{`let make_adder = fn(n) {
     return fn(x) { x + n };
 };
 
 let add5 = make_adder(5);
 add5(10);   # 15
-add5(20);   # 25`}</code></pre>
+add5(20);   # 25`}</Pre>
 
       <h3>Recursion</h3>
-      <pre><code>{`let fib = fn(n) {
+      <Pre>{`let fib = fn(n) {
     if (n <= 1) { return n; };
     return fib(n - 1) + fib(n - 2);
 };
 
-fib(10);   # 55`}</code></pre>
+fib(10);   # 55`}</Pre>
 
       <h3>Higher-order functions</h3>
       <Note>
         <code>map</code>, <code>filter</code>, and <code>reduce</code> are not in the stdlib yet because they
         need evaluator access to call function values. Use <code>for</code> loops in the meantime.
       </Note>
-      <pre><code>{`let apply = fn(f, x) { f(x) };
+      <Pre>{`let apply = fn(f, x) { f(x) };
 
-apply(fn(n) { n * 2 }, 7);   # 14`}</code></pre>
+apply(fn(n) { n * 2 }, 7);   # 14`}</Pre>
 
       <h2>Arrays</h2>
-      <pre><code>{`let nums = [1, 2, 3, 4, 5];
+      <Pre>{`let nums = [1, 2, 3, 4, 5];
 
 nums[0];          # 1
 nums[2] = 99;     # mutate in place
 nums[-1];         # last element (if supported)
 
-let mixed = [1, "hello", true, [2, 3]];`}</code></pre>
+let mixed = [1, "hello", true, [2, 3]];`}</Pre>
       <p>See the <Link href="/docs/stdlib">arrays module</Link> for slice, sort, zip, flatten, and 15 more operations.</p>
 
       <h2>Hashes</h2>
-      <pre><code>{`let person = { "name": "Alice", "age": 30 };
+      <Pre>{`let person = { "name": "Alice", "age": 30 };
 
 person["name"];        # Alice
 person.name;           # same — dot access works too
-person["role"] = "admin";   # add or update key`}</code></pre>
+person["role"] = "admin";   # add or update key`}</Pre>
       <p>Keys can be any type. See the <Link href="/docs/stdlib">hash module</Link> for <code>keys</code>, <code>values</code>, <code>merge</code>, and more.</p>
 
       <h2>Structs</h2>
@@ -173,7 +174,7 @@ person["role"] = "admin";   # add or update key`}</code></pre>
         Structs define a named type with default field values. Instantiate with <code>TypeName {"{ fields }"}</code> —
         any field not provided gets its default.
       </p>
-      <pre><code>{`struct User {
+      <Pre>{`struct User {
     name: "Guest",
     role: "user",
     active: true,
@@ -184,33 +185,33 @@ let guest = User {};
 
 admin.name;    # Walon
 guest.name;    # Guest
-guest.active;  # true`}</code></pre>
+guest.active;  # true`}</Pre>
 
       <h2>Modules</h2>
 
       <h3>Import stdlib</h3>
-      <pre><code>{`import "math";
+      <Pre>{`import "math";
 import "strings";
 
 math.sqrt(16);              # 4.0
 math.clamp(150, 0, 100);    # 100
 
 strings.split("a,b,c", ",");   # ["a", "b", "c"]
-strings.to_upper("hello");     # HELLO`}</code></pre>
+strings.to_upper("hello");     # HELLO`}</Pre>
 
       <h3>Import a .cl file</h3>
       <p>
         Import any <code>.cl</code> file by its path (without the extension). Everything declared at the
         top level in that file becomes a field on the resulting module object.
       </p>
-      <pre><code>{`# utils.cl
+      <Pre>{`# utils.cl
 const VERSION = "1.0";
 let double = fn(x) { x * 2 };
 
 # main.cl
 import "utils";
 utils.double(5);    # 10
-utils.VERSION;      # 1.0`}</code></pre>
+utils.VERSION;      # 1.0`}</Pre>
 
       <p>See all 12 built-in modules in the <Link href="/docs/stdlib">standard library reference</Link>.</p>
     </>

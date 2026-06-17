@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 const navLinks = [
   { label: "Docs", href: "/docs" },
@@ -14,6 +15,7 @@ const navLinks = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="nav-header">
@@ -27,7 +29,11 @@ export default function Navbar() {
         {/* Desktop links */}
         <nav className="nav-desktop">
           {navLinks.map((item) => (
-            <Link key={item.href} href={item.href} className="nav-link">
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`nav-link${pathname === item.href ? " nav-link-active" : ""}`}
+            >
               {item.label}
             </Link>
           ))}
@@ -66,7 +72,7 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="nav-mobile-link"
+              className={`nav-mobile-link${pathname === item.href ? " nav-mobile-link-active" : ""}`}
               onClick={() => setOpen(false)}
             >
               {item.label}

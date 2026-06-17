@@ -22,5 +22,134 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Docs article prose styles */
+.docs-content h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.docs-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.docs-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.docs-content p {
+  line-height: 1.75;
+  color: #52525b;
+  margin-bottom: 1rem;
+}
+
+.docs-content a {
+  color: #18181b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.docs-content code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.875em;
+  background: #f4f4f5;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+}
+
+.docs-content pre {
+  background: #18181b;
+  color: #d4d4d8;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.docs-content pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+.docs-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+.docs-content th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid #e4e4e7;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+}
+
+.docs-content td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f4f4f5;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.docs-content kbd {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.8em;
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .docs-content h1 {
+    border-bottom-color: #27272a;
+  }
+
+  .docs-content p {
+    color: #a1a1aa;
+  }
+
+  .docs-content a {
+    color: #e4e4e7;
+  }
+
+  .docs-content code {
+    background: #27272a;
+    color: #e4e4e7;
+  }
+
+  .docs-content th {
+    border-bottom-color: #27272a;
+    color: #71717a;
+  }
+
+  .docs-content td {
+    border-bottom-color: #18181b;
+  }
+
+  .docs-content kbd {
+    background: #27272a;
+    border-color: #3f3f46;
+  }
 }

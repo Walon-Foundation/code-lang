@@ -26,7 +26,7 @@ pub enum Object {
         type_name: String,
         fields: HashMap<String, Object>,
     },
-    Modulue { members: HashMap<String, Object> },
+    Module { members: HashMap<String, Object> },
     Function {
         parameters: Vec<Expression>,
         body: Box<Statement>,
@@ -34,6 +34,7 @@ pub enum Object {
     },
     Array(Vec<Object>),
     Hash(Vec<(Object, Object)>),
+    Builtin(fn(Vec<Object>) -> Object)
 }
 
 impl std::fmt::Debug for Object {
@@ -58,7 +59,8 @@ impl Object {
             Object::Error { .. } => "ERROR",
             Object::StructType { .. } => "STRUCT_TYPE",
             Object::StructInstance { .. } => "STRUCT_INSTANCE",
-            Object::Modulue { .. } => "MODULE",
+            Object::Module { .. } => "MODULE",
+            Object::Builtin(_) => "BUILTIN",
             Object::Function { .. } => "FUNCTION",
             Object::Array(_) => "ARRAY",
             Object::Hash(_) => "HASH",
@@ -84,7 +86,8 @@ impl std::fmt::Display for Object {
                 let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 write!(f, "{} {{ {} }}", type_name, pairs.join(", "))
             },
-            Object::Modulue { .. } => write!(f, "[Module]"),
+            Object::Module { .. } => write!(f, "[Module]"),
+            Object::Builtin(_) => write!(f, "[Builtin]"),
             Object::Function { parameters, .. } => {
                 let params: Vec<String> = parameters.iter().map(|p| format!("{:?}", p)).collect();
                 write!(f, "fn({})", params.join(", "))

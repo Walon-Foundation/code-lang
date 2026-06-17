@@ -35,7 +35,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
           ))}
         </nav>
       </aside>
-      <article className="docs-content" style={{ flex: 1, minWidth: 0 }}>
+      <article className="docs-content docs-article">
         {children}
       </article>
     </div>

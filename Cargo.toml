@@ -26,6 +26,10 @@ anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive"] }
 thiserror = "2.0.18"
 rustyline = "14"
+serde_json = "1"
+chrono = "0.4"
+rand = "0.9"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

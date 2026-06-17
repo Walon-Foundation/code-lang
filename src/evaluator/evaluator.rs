@@ -3,7 +3,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     ast::ast::{Expression, Program, Statement},
     lexer::lexer::Lexer,
-    object::object::{Environment, Object},
+    object::object::{CallInfo, Environment, Object},
     parser::parser::Parser,
     token::token::{Token, TokenType},
 };
@@ -27,15 +27,17 @@ impl Evaluator {
     
     fn preload_stdlib(&mut self) {
         self.module_cache.insert("arrays".to_string(),  crate::std_lib::array::module());
-        // self.module_cache.insert("math".to_string(),    crate::std::math::module());
-        // self.module_cache.insert("strings".to_string(), crate::std::strings::module());
-        // self.module_cache.insert("fs".to_string(),      crate::std::fs::module());
-        // self.module_cache.insert("time".to_string(),    crate::std::time::module());
-        // self.module_cache.insert("hash".to_string(),    crate::std::hash::module());
-        // self.module_cache.insert("os".to_string(),      crate::std::os::module());
-        // self.module_cache.insert("json".to_string(),    crate::std::json::module());
-        // self.module_cache.insert("fmt".to_string(),     crate::std::general::module());
-        // http / net — see note
+        self.module_cache.insert("strings".to_string(), crate::std_lib::strings::module());
+        self.module_cache.insert("math".to_string(),    crate::std_lib::math::module());
+        self.module_cache.insert("fs".to_string(),      crate::std_lib::fs::module());
+        self.module_cache.insert("hash".to_string(),    crate::std_lib::hash::module());
+        self.module_cache.insert("fmt".to_string(),     crate::std_lib::fmt::module());
+        self.module_cache.insert("os".to_string(),      crate::std_lib::os_mod::module());
+        self.module_cache.insert("time".to_string(),    crate::std_lib::time::module());
+        self.module_cache.insert("json".to_string(),    crate::std_lib::json::module());
+        self.module_cache.insert("rand".to_string(),    crate::std_lib::rand::module());
+        self.module_cache.insert("path".to_string(),    crate::std_lib::path::module());
+        self.module_cache.insert("http".to_string(),    crate::std_lib::http::module());
     }
     pub fn eval(&mut self, node: &Program, env: &Env) -> Object {
         let mut result = Object::Null;
@@ -659,7 +661,7 @@ impl Evaluator {
                     other => other,
                 }
             }
-            Object::Builtin(f) => f(args),
+            Object::Builtin(f) => f(args, CallInfo { line, column }),
             _ => Object::Error { message: format!("not a function: {}", func.type_name()), line, column },
         }
     }

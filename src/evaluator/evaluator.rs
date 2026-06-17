@@ -511,7 +511,7 @@ impl Evaluator {
                         }
                         if !found { pairs.push((key, final_val.clone())); }
                     }
-                    Object::Modulue { members } => { members.insert(prop, final_val.clone()); }
+                    Object::Module { members } => { members.insert(prop, final_val.clone()); }
                     _ => return Object::Error { message: format!("cannot assign to property on {}", container.type_name()), line, column },
                 }
                 env.borrow_mut().update(&root, container);
@@ -598,7 +598,7 @@ impl Evaluator {
                 Some(v) => v.clone(),
                 None => Object::Error { message: format!("unknown field {} on {}", prop, type_name), line, column },
             },
-            Object::Modulue { members } => match members.get(prop) {
+            Object::Module { members } => match members.get(prop) {
                 Some(v) => v.clone(),
                 None => Object::Error { message: format!("module has no member {}", prop), line, column },
             },
@@ -638,6 +638,7 @@ impl Evaluator {
                     other => other,
                 }
             }
+            Object::Builtin(f) => f(args),
             _ => Object::Error { message: format!("not a function: {}", func.type_name()), line, column },
         }
     }
@@ -712,7 +713,7 @@ impl Evaluator {
         self.eval(&program, &module_env);
 
         let members: HashMap<String, Object> = module_env.borrow().store.clone();
-        let module = Object::Modulue { members };
+        let module = Object::Module { members };
 
         env.borrow_mut().set(path.to_string(), module.clone());
         self.module_cache.insert(path.to_string(), module.clone());

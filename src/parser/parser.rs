@@ -22,9 +22,16 @@ pub enum Precedences {
 
 
 #[derive(Debug)]
+pub struct ParseError {
+    pub message: String,
+    pub line: usize,
+    pub column: usize,
+}
+
+#[derive(Debug)]
 pub struct Parser {
     l: Lexer,
-    pub errors: Vec<String>,
+    pub errors: Vec<ParseError>,
     cur_token:Token,
     peak_token:Token,
 }
@@ -713,8 +720,23 @@ impl Parser {
             TokenType::Continue => self.parse_continue_statement(),
             TokenType::Const => self.parse_const_statement(),
             TokenType::Enum => self.parse_enum_statement(),
+            TokenType::Pub => self.parse_pub_statement(),
             _                 => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_pub_statement(&mut self) -> Option<Statement> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+
+        self.next_token();
+        let inner = match self.cur_token.token_type.clone(){
+            TokenType::Let => self.parse_let_statement()?,
+            TokenType::Const => self.parse_const_statement()?,
+            _ => return None
+        };
+
+        Some(Statement::Pub { statement: Box::new(inner), line, column })
     }
 
     fn parse_enum_statement(&mut self) -> Option<Statement>{
@@ -825,7 +847,11 @@ impl Parser {
             TokenType::InterpolatedString(parts) => match parts.as_slice() {
                 [StringPart::Literal(s)] => s.clone(),
                 _ => {
-                    self.errors.push("import path must be a plain string".to_string());
+                    self.errors.push(ParseError {
+                        message: "import path must be a plain string".to_string(),
+                        line: self.cur_token.line,
+                        column: self.cur_token.column,
+                    });
                     return None;
                 }
             },
@@ -982,14 +1008,11 @@ impl Parser {
     }
     
     fn peak_error(&mut self, tok: TokenType) {
-        let error = format!(
-            "[Line {}, Column {}]: expected next token to be {:?}, got {:?} instead",
-            self.peak_token.line,
-            self.peak_token.column,
-            tok,
-            self.peak_token.token_type
-        );
-        self.errors.push(error);
+        self.errors.push(ParseError {
+            message: format!("expected {:?}, got {:?}", tok, self.peak_token.token_type),
+            line: self.peak_token.line,
+            column: self.peak_token.column,
+        });
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -998,7 +1021,11 @@ impl Parser {
         while self.cur_token.token_type != TokenType::EOF {
             match self.parse_statement() {
                 Some(statement) => program.statements.push(statement),
-                None => self.errors.push("invalid statement".to_string()),
+                None => self.errors.push(ParseError {
+                    message: "invalid statement".to_string(),
+                    line: self.cur_token.line,
+                    column: self.cur_token.column,
+                }),
             }
 
             self.next_token();

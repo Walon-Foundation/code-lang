@@ -1,7 +1,7 @@
 use rustyline::{Editor, error::ReadlineError};
 
 use crate::lexer::lexer::Lexer;
-use crate::parser::parser::Parser;
+use crate::parser::parser::{ParseError, Parser};
 use crate::evaluator::evaluator::Evaluator;
 use crate::object::object::{Environment, Object};
 
@@ -70,6 +70,7 @@ pub fn run_repl() {
 
     let env = Environment::new();
     let mut evaluator = Evaluator::new();
+    evaluator.register_globals(&env);
 
     loop {
         match rl.readline(">> ") {
@@ -89,7 +90,7 @@ pub fn run_repl() {
 
                 if !parser.errors.is_empty() {
                     for err in &parser.errors {
-                        eprintln!("parse error: {}", err);
+                        show_error(&input, &err.message, err.line, err.column);
                     }
                     continue;
                 }
@@ -121,13 +122,14 @@ pub fn execute(input: String) {
 
     if !parser.errors.is_empty() {
         for err in &parser.errors {
-            eprintln!("parse error: {}", err);
+            show_error(&input, &err.message, err.line, err.column);
         }
         std::process::exit(1);
     }
 
     let env = Environment::new();
     let mut evaluator = Evaluator::new();
+    evaluator.register_globals(&env);
     let result = evaluator.eval(&program, &env);
 
     match result {

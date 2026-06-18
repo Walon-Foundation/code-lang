@@ -31,6 +31,7 @@ pub enum Statement {
     Break { line: usize, column: usize },
     Continue { line: usize, column: usize },
     Enum { name:String, variant:Vec<String>, line:usize, column:usize},
+    Pub { statement:Box<Statement>,line:usize, column:usize }
 }
 
 #[derive(Debug, Clone)]

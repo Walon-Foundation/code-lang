@@ -28,6 +28,7 @@ pub enum TokenType {
     Enum,
     Continue,
     Ident(String),
+    Pub,
 
     //Identifiers
     Int(isize),
@@ -126,6 +127,7 @@ pub fn lookup_ident(ident: &str) -> TokenType {
         "const"    => TokenType::Const,
         "switch"   => TokenType::Switch,
         "enum"     => TokenType::Enum,
+        "pub"      => TokenType::Pub,
         _          => TokenType::Ident(ident.to_string()),
     }
 }

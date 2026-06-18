@@ -29,7 +29,7 @@ esac
 
 TARGET="${ARCH_TARGET}-${OS_TARGET}"
 
-# ── latest version from GitHub ───────────────────────────────────────────────
+# ── fetch tool ───────────────────────────────────────────────────────────────
 if command -v curl > /dev/null 2>&1; then
   FETCH="curl -fsSL"
 elif command -v wget > /dev/null 2>&1; then
@@ -39,7 +39,12 @@ else
   exit 1
 fi
 
-VERSION=$(${FETCH} "https://api.github.com/repos/${REPO}/releases/latest" \
+# ── find the asset URL for our target from the latest release ────────────────
+# Queries the GitHub API and picks the browser_download_url that contains our
+# target triple, excluding installer scripts, checksums, and manifests.
+RELEASE_JSON=$(${FETCH} "https://api.github.com/repos/${REPO}/releases/latest")
+
+VERSION=$(echo "$RELEASE_JSON" \
   | grep '"tag_name"' \
   | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
 
@@ -48,8 +53,21 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-ARCHIVE="${BIN}-${TARGET}.tar.gz"
-URL="https://github.com/${REPO}/releases/download/${VERSION}/${ARCHIVE}"
+URL=$(echo "$RELEASE_JSON" \
+  | grep '"browser_download_url"' \
+  | grep "${TARGET}" \
+  | grep -v 'installer\|\.sha256\|dist-manifest' \
+  | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' \
+  | head -1)
+
+if [ -z "$URL" ]; then
+  echo "error: no release asset found for ${TARGET}"
+  echo "check https://github.com/${REPO}/releases for available targets"
+  exit 1
+fi
+
+# derive archive filename from the URL
+ARCHIVE=$(basename "$URL")
 
 echo "installing code-lang ${VERSION} for ${TARGET}"
 echo "from: ${URL}"
@@ -65,10 +83,18 @@ else
   wget -q "$URL" -O "${TMP}/${ARCHIVE}"
 fi
 
-# ── extract ───────────────────────────────────────────────────────────────────
-tar -xzf "${TMP}/${ARCHIVE}" -C "$TMP"
+# ── extract (handles both .tar.gz and .tar.xz) ───────────────────────────────
+case "$ARCHIVE" in
+  *.tar.gz)  tar -xzf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
+  *.tar.xz)  tar -xJf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
+  *.zip)     unzip -q "${TMP}/${ARCHIVE}" -d "$TMP" ;;
+  *)
+    echo "error: unknown archive format: ${ARCHIVE}"
+    exit 1
+    ;;
+esac
 
-# find the binary (cargo-dist may nest it in a subdirectory)
+# find the binary (cargo-dist nests it in a subdirectory)
 BINARY=$(find "$TMP" -name "$BIN" -type f | head -1)
 if [ -z "$BINARY" ]; then
   echo "error: could not find binary '${BIN}' in the archive"

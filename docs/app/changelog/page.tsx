@@ -10,7 +10,7 @@ const CHANGELOG: {
   sections: { title: string; items: string[] }[];
 }[] = [
   {
-    version: "v0.11.0",
+    version: "v0.2.0",
     date: "June 2026",
     tag: "release",
     sections: [

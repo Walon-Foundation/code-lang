@@ -93,6 +93,11 @@ body {
   .docs-content h2  { font-size: 1.0625rem; margin-top: 2rem; }
   .docs-content h3  { font-size: 0.9375rem; }
   .docs-content pre { font-size: 0.8125rem; padding: 0.875rem 1rem; }
+
+  /* Install page code cards */
+  .install-card pre { font-size: 0.75rem; padding: 1rem; }
+  .install-card-head { padding: 0.625rem 1rem !important; }
+  .install-card-head .install-tag { display: none; }
 }
 
 /* ─── Navbar ─────────────────────────────────────── */
@@ -411,17 +416,20 @@ body {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   color: var(--muted);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s, background 0.15s;
   z-index: 1;
+  padding: 0;
 }
 
 .pre-wrap:hover .copy-btn { opacity: 1; }

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import HomeInstall from "./components/HomeInstall";
 
 const EXAMPLE = `import "fmt";
 import "math";
@@ -77,7 +78,7 @@ export default function Home() {
           }}
         >
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#818cf8", display: "inline-block" }} />
-          Active development · v0.1
+          Active development · v0.2.0
         </div>
 
         {/* Headline */}
@@ -293,42 +294,15 @@ export default function Home() {
 
       {/* ── Install ──────────────────────────────────── */}
       <section className="pw s-lg">
-        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "0.625rem" }}>
           Install
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
-          {/* Build */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "10px", overflow: "hidden" }}>
-            <div style={{ padding: "0.625rem 1rem", borderBottom: "1px solid var(--border)", fontSize: "0.75rem", color: "#52525b", fontWeight: 500 }}>
-              Build from source
-            </div>
-            <pre style={{ margin: 0, padding: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "#d4d4d8", lineHeight: 1.7 }}>
-              <code>{`git clone https://github.com/Walon-Foundation/code-lang
-cd code-lang
-cargo build --release`}</code>
-            </pre>
-          </div>
-          {/* Run */}
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "10px", overflow: "hidden" }}>
-            <div style={{ padding: "0.625rem 1rem", borderBottom: "1px solid var(--border)", fontSize: "0.75rem", color: "#52525b", fontWeight: 500 }}>
-              Run it
-            </div>
-            <pre style={{ margin: 0, padding: "1rem", fontFamily: "var(--font-mono)", fontSize: "0.8125rem", color: "#d4d4d8", lineHeight: 1.7 }}>
-              <code>{`# Start the REPL
-./target/release/code-lang
-
-# Run a script
-./target/release/code-lang hello.cl`}</code>
-            </pre>
-          </div>
-        </div>
-        <p style={{ fontSize: "0.875rem", color: "#52525b", marginTop: "1.5rem" }}>
-          Requires{" "}
-          <a href="https://rustup.rs" target="_blank" rel="noopener noreferrer" style={{ color: "#818cf8" }}>
-            Rust (stable)
-          </a>
-          .
+        <p style={{ fontSize: "0.9375rem", color: "var(--muted)", marginBottom: "2rem" }}>
+          Pre-built binaries for Linux, macOS, and Windows. No Rust required.
         </p>
+        <div style={{ maxWidth: 560 }}>
+          <HomeInstall />
+        </div>
       </section>
     </main>
   );

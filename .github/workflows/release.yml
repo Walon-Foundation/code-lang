@@ -135,6 +135,7 @@ jobs:
       - name: Build artifacts
         env:
           CARGO_HTTP_MULTIPLEXING: "false"
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
           # Actually do builds and make zips and whatnot
           cargo dist build ${{ needs.plan.outputs.tag-flag }} --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json

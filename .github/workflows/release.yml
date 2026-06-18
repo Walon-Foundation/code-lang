@@ -129,6 +129,9 @@ jobs:
       - name: Install dependencies
         run: |
           ${{ matrix.packages_install }}
+      - name: Install aarch64 cross-compiler
+        if: contains(join(matrix.targets, ','), 'aarch64-unknown-linux-gnu')
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: Build artifacts
         run: |
           # Actually do builds and make zips and whatnot

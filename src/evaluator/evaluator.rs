@@ -70,16 +70,30 @@ impl Evaluator {
                 result
             }
 
+            Statement::Pub { statement, .. } => {
+                // eval the inner let/const — this sets the name in env normally
+                let result = self.eval_statement(statement, env);
+                if matches!(result, Object::Error { .. }) { return result; }
+            
+                // extract the name from the inner statement and mark it as pubed
+                let name = match statement.as_ref() {
+                    Statement::Let   { name, .. } => name.clone(),
+                    Statement::Const { name, .. } => name.clone(),
+                    _ => return result,
+                };
+                env.borrow_mut().mark_pub(&name);
+                Object::Null
+            }
+
             Statement::Let { name, value, .. } => {
                 let val = self.eval_expression(value, env);
-                if matches!(val, Object::Error { .. }) { return val; }
+                // errors are stored as values so callers can use is_error()
                 env.borrow_mut().set(name.clone(), val);
                 Object::Null
             }
 
             Statement::Const { name, value, .. } => {
                 let val = self.eval_expression(value, env);
-                if matches!(val, Object::Error { .. }) { return val; }
                 env.borrow_mut().set_const(name.clone(), val);
                 Object::Null
             }
@@ -227,9 +241,6 @@ impl Evaluator {
                 let func = self.eval_expression(function, env);
                 if matches!(func, Object::Error { .. }) { return func; }
                 let args = self.eval_args(argument, env);
-                if args.len() == 1 && matches!(args[0], Object::Error { .. }) {
-                    return args.into_iter().next().unwrap_or(Object::Null);
-                }
                 self.apply_function(func, args, *line, *column)
             }
 
@@ -470,6 +481,10 @@ impl Evaluator {
         }
     }
 
+    pub fn register_globals(&self, env: &Env) {
+        env.borrow_mut().set("is_error".to_string(), Object::Builtin(builtin_is_error));
+    }
+
     fn objects_equal(&self, a: &Object, b: &Object) -> bool {
         match (a, b) {
             (Object::Integer(x),    Object::Integer(y))    => x == y,
@@ -669,7 +684,7 @@ impl Evaluator {
                         }
                         if !found { pairs.push((key, final_val.clone())); }
                     }
-                    Object::Module { members } => { members.insert(prop, final_val.clone()); }
+                    Object::Module { members, .. } => { members.insert(prop, final_val.clone()); }
                     _ => return Object::Error { message: format!("cannot assign to property on {}", container.type_name()), line, column },
                 }
                 env.borrow_mut().update(&root, container);
@@ -760,9 +775,16 @@ impl Evaluator {
                 Some(v) => v.clone(),
                 None => Object::Error { message: format!("unknown field {} on {}", prop, type_name), line, column },
             },
-            Object::Module { members } => match members.get(prop) {
+            Object::Module { name, pub_gated, members } => match members.get(prop) {
                 Some(v) => v.clone(),
-                None => Object::Error { message: format!("module has no member {}", prop), line, column },
+                None => {
+                    let msg = if *pub_gated {
+                        format!("{} has no public member '{}'", name, prop)
+                    } else {
+                        format!("{} has no member '{}'", name, prop)
+                    };
+                    Object::Error { message: msg, line, column }
+                }
             },
             Object::Hash(pairs) => {
                 let key = Object::StringType(prop.to_string());
@@ -821,8 +843,21 @@ impl Evaluator {
                     other => other,
                 }
             }
-            Object::Builtin(f) => f(args, CallInfo { line, column }),
-            Object::BuiltinHigherOrder(f) => f(args, CallInfo { line, column }, self),
+            Object::Builtin(f) => {
+                let result = f(args, CallInfo { line, column });
+                // stamp call-site position onto errors that builtins emit with 0,0
+                match result {
+                    Object::Error { message, line: 0, column: 0 } => Object::Error { message, line, column },
+                    other => other,
+                }
+            }
+            Object::BuiltinHigherOrder(f) => {
+                let result = f(args, CallInfo { line, column }, self);
+                match result {
+                    Object::Error { message, line: 0, column: 0 } => Object::Error { message, line, column },
+                    other => other,
+                }
+            }
             _ => Object::Error { message: format!("not a function: {}", func.type_name()), line, column },
         }
     }
@@ -885,15 +920,29 @@ impl Evaluator {
         let program = parser.parse_program();
 
         if !parser.errors.is_empty() {
-            let msg = format!("parse errors in \"{}\": {}", path, parser.errors.join("; "));
+            let msgs: Vec<String> = parser.errors.iter().map(|e| e.message.clone()).collect();
+            let msg = format!("parse errors in \"{}\": {}", path, msgs.join("; "));
             return Object::Error { message: msg, line, column };
         }
 
         let module_env = Environment::new_enclosed(Rc::clone(env));
         self.eval(&program, &module_env);
 
-        let members: HashMap<String, Object> = module_env.borrow().store.clone();
-        let module = Object::Module { members };
+        let env_ref = module_env.borrow();
+        let pub_gated = !env_ref.pubs.is_empty();
+        let members: HashMap<String, Object> = if !pub_gated {
+            // no pub statements → everything is public (backward compatible)
+            env_ref.store.clone()
+        } else {
+            // filter to only pubed names
+            env_ref.store.iter()
+                .filter(|(k, _)| env_ref.pubs.contains(*k))
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect()
+        };
+        drop(env_ref);
+
+        let module = Object::Module { name: path.clone(), pub_gated, members };
 
         env.borrow_mut().set(path.to_string(), module.clone());
         self.module_cache.insert(path.to_string(), module.clone());
@@ -905,5 +954,12 @@ impl Evaluator {
 impl Evaluable for Evaluator {
     fn call_function(&mut self, func: Object, args: Vec<Object>, info: CallInfo) -> Object {
         self.apply_function(func, args, info.line, info.column)
+    }
+}
+
+fn builtin_is_error(args: Vec<Object>, _: CallInfo) -> Object {
+    match args.as_slice() {
+        [val] => Object::Bool(matches!(val, Object::Error { .. })),
+        _ => Object::Error { message: "is_error expects 1 argument".to_string(), line: 0, column: 0 },
     }
 }

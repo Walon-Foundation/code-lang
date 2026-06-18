@@ -290,7 +290,7 @@ pub fn module() -> Object {
     members.insert("is_empty".to_string(),    Object::Builtin(is_empty));
     members.insert("pad_left".to_string(),    Object::Builtin(pad_left));
     members.insert("pad_right".to_string(),   Object::Builtin(pad_right));
-    Object::Module { members }
+    Object::Module { name: "strings".to_string(), pub_gated: false, members }
 }
 
 fn lines(args: Vec<Object>, info: CallInfo) -> Object {

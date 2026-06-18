@@ -132,5 +132,5 @@ pub fn module() -> Object {
     members.insert("len".to_string(),     Object::Builtin(len));
     members.insert("entries".to_string(), Object::Builtin(entries));
     members.insert("get".to_string(),     Object::Builtin(get));
-    Object::Module { members }
+    Object::Module { name: "hash".to_string(), pub_gated: false, members }
 }

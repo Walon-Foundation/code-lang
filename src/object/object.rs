@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
 
 use crate::ast::ast::{Expression, Statement};
 
@@ -36,7 +36,7 @@ pub enum Object {
         type_name: String,
         fields: HashMap<String, Object>,
     },
-    Module { members: HashMap<String, Object> },
+    Module { name: String, pub_gated: bool, members: HashMap<String, Object> },
     Function {
         parameters: Vec<Expression>,
         body: Box<Statement>,
@@ -102,13 +102,13 @@ impl std::fmt::Display for Object {
             Object::Break => write!(f, "break"),
             Object::Continue => write!(f, "continue"),
             Object::Return(v) => write!(f, "{}", v),
-            Object::Error { message, line, column } => write!(f, "[Line {}, Column {}] ERROR: {}", line, column, message),
+            Object::Error { message, .. } => write!(f, "error: {}", message),
             Object::StructType { name, .. } => write!(f, "struct {}", name),
             Object::StructInstance { type_name, fields } => {
                 let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 write!(f, "{} {{ {} }}", type_name, pairs.join(", "))
             },
-            Object::Module { .. } => write!(f, "[Module]"),
+            Object::Module { name, .. } => write!(f, "[Module: {}]", name),
             Object::Builtin(_) | Object::BuiltinHigherOrder(_) => write!(f, "[Builtin]"),
             Object::Function { parameters, .. } => {
                 let params: Vec<String> = parameters.iter().map(|p| format!("{:?}", p)).collect();
@@ -133,6 +133,7 @@ impl std::fmt::Display for Object {
 pub struct Environment {
     pub store: HashMap<String, Object>,
     pub consts: HashMap<String, bool>,
+    pub pubs: HashSet<String>,
     outer: Option<Rc<RefCell<Environment>>>,
 }
 
@@ -141,6 +142,7 @@ impl Environment {
         Rc::new(RefCell::new(Environment {
             store: HashMap::new(),
             consts: HashMap::new(),
+            pubs: HashSet::new(),
             outer: None,
         }))
     }
@@ -149,6 +151,7 @@ impl Environment {
         Rc::new(RefCell::new(Environment {
             store: HashMap::new(),
             consts: HashMap::new(),
+            pubs: HashSet::new(),
             outer: Some(outer),
         }))
     }
@@ -192,5 +195,9 @@ impl Environment {
                 None => false,
             }
         }
+    }
+
+    pub fn mark_pub(&mut self, name:&str){
+        self.pubs.insert(name.to_string());
     }
 }

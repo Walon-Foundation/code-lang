@@ -291,5 +291,5 @@ pub fn module() -> Object {
     members.insert("sign".to_string(),  Object::Builtin(sign));
     members.insert("gcd".to_string(),   Object::Builtin(gcd));
     members.insert("lcm".to_string(),   Object::Builtin(lcm));
-    Object::Module { members }
+    Object::Module { name: "math".to_string(), pub_gated: false, members }
 }

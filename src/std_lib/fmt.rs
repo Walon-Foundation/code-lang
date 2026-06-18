@@ -135,5 +135,5 @@ pub fn module() -> Object {
     members.insert("input".to_string(),   Object::Builtin(input));
     members.insert("clear".to_string(),   Object::Builtin(clear));
     members.insert("format".to_string(),  Object::Builtin(format_fn));
-    Object::Module { members }
+    Object::Module { name: "fmt".to_string(), pub_gated: false, members }
 }

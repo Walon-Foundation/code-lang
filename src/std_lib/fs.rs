@@ -236,5 +236,5 @@ pub fn module() -> Object {
     members.insert("remove_dir".to_string(), Object::Builtin(remove_dir));
     members.insert("copy".to_string(),       Object::Builtin(copy));
     members.insert("rename".to_string(),     Object::Builtin(rename));
-    Object::Module { members }
+    Object::Module { name: "fs".to_string(), pub_gated: false, members }
 }

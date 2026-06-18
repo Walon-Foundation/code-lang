@@ -68,5 +68,5 @@ pub fn module() -> Object {
     members.insert("get_wd".to_string(),   Object::Builtin(get_wd));
     members.insert("exit".to_string(),     Object::Builtin(exit));
     members.insert("hostname".to_string(), Object::Builtin(hostname));
-    Object::Module { members }
+    Object::Module { name: "os".to_string(), pub_gated: false, members }
 }

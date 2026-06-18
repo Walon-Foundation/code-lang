@@ -151,5 +151,5 @@ pub fn module() -> Object {
     // layout constants (chrono format strings)
     members.insert("RFC3339".to_string(),  Object::StringType("%Y-%m-%dT%H:%M:%S%z".to_string()));
     members.insert("Kitchen".to_string(),  Object::StringType("%I:%M %p".to_string()));
-    Object::Module { members }
+    Object::Module { name: "time".to_string(), pub_gated: false, members }
 }

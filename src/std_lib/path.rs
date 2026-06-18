@@ -108,5 +108,5 @@ pub fn module() -> Object {
     members.insert("stem".to_string(),        Object::Builtin(stem));
     members.insert("absolute".to_string(),    Object::Builtin(absolute));
     members.insert("is_absolute".to_string(), Object::Builtin(is_absolute));
-    Object::Module { members }
+    Object::Module { name: "path".to_string(), pub_gated: false, members }
 }

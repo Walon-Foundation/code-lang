@@ -162,5 +162,5 @@ pub fn module() -> Object {
     members.insert("get".to_string(),       Object::Builtin(get));
     members.insert("post".to_string(),      Object::Builtin(post));
     members.insert("post_json".to_string(), Object::Builtin(post_json));
-    Object::Module { members }
+    Object::Module { name: "http".to_string(), pub_gated: false, members }
 }

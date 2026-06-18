@@ -493,5 +493,5 @@ pub fn module() -> Object {
     members.insert("find".to_string(),     Object::BuiltinHigherOrder(array_find));
     members.insert("any".to_string(),      Object::BuiltinHigherOrder(array_any));
     members.insert("all".to_string(),      Object::BuiltinHigherOrder(array_all));
-    Object::Module { members }
+    Object::Module { name: "arrays".to_string(), pub_gated: false, members }
 }

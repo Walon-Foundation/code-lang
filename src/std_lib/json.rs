@@ -83,5 +83,5 @@ pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("parse".to_string(),     Object::Builtin(parse));
     members.insert("stringify".to_string(), Object::Builtin(stringify));
-    Object::Module { members }
+    Object::Module { name: "json".to_string(), pub_gated: false, members }
 }

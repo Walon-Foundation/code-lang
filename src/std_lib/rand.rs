@@ -68,5 +68,5 @@ pub fn module() -> Object {
     members.insert("float".to_string(),   Object::Builtin(float));
     members.insert("choice".to_string(),  Object::Builtin(choice));
     members.insert("shuffle".to_string(), Object::Builtin(shuffle));
-    Object::Module { members }
+    Object::Module { name: "rand".to_string(), pub_gated: false, members }
 }

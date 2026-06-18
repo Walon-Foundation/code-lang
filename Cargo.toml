@@ -4,6 +4,7 @@ members = ["."]
 [workspace.metadata.dist]
 cargo-dist-version = "0.22.1"
 ci = "github"
+allow-dirty = ["ci"]
 installers = ["shell", "powershell"]
 targets = [
   "x86_64-unknown-linux-gnu",

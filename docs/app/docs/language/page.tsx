@@ -55,7 +55,7 @@ PI  = 3;       # error: cannot reassign constant`}</Pre>
         <tbody>
           <tr><td>Integer</td><td><code>42</code>, <code>-7</code></td><td>64-bit signed</td></tr>
           <tr><td>Float</td><td><code>3.14</code>, <code>-0.5</code></td><td>64-bit IEEE 754</td></tr>
-          <tr><td>String</td><td><code>"hello"</code></td><td>UTF-8, double-quoted</td></tr>
+          <tr><td>String</td><td><code>"hello"</code>, <code>"hi ${name}"</code></td><td>UTF-8, double-quoted; supports interpolation</td></tr>
           <tr><td>Char</td><td><code>'a'</code></td><td>Single character, single-quoted</td></tr>
           <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
           <tr><td>Null</td><td><code>null</code></td><td>Absence of value</td></tr>
@@ -86,6 +86,18 @@ let n = 5;
 n++;          # n is now 6
 n += 10;      # n is now 16`}</Pre>
 
+      <h2 id="string-interpolation">String interpolation</h2>
+      <p>
+        Embed any expression inside a string with <code>{"${...}"}</code>. The expression is evaluated
+        and converted to a string automatically.
+      </p>
+      <Pre>{`let name = "Walon";
+let age  = 25;
+
+"Hello, \${name}!";          # Hello, Walon!
+"In 5 years you'll be \${age + 5}.";   # In 5 years you'll be 30.
+"pi ≈ \${math.round(3.14159, 2)}";`}</Pre>
+
       <h2 id="control-flow">Control flow</h2>
 
       <h3>if / elseif / else</h3>
@@ -112,6 +124,41 @@ while (i < 5) {
     if (i == 4) { break; };
 };`}</Pre>
       <p><code>break</code> and <code>continue</code> work in both <code>while</code> and <code>for</code>.</p>
+
+      <h3>for-in</h3>
+      <p>Iterate over arrays or hashes without a counter.</p>
+      <Pre>{`let nums = [10, 20, 30];
+
+for (n in nums) {
+    fmt.print(n);
+};
+
+let scores = { "Alice": 95, "Bob": 87 };
+
+for (name, score in scores) {
+    fmt.print("\${name}: \${score}");
+};`}</Pre>
+
+      <h3>switch</h3>
+      <p>
+        Compare a subject against a series of patterns using <code>==</code>. The first matching arm runs.
+        If no arm matches, the result is <code>null</code>.
+      </p>
+      <Pre>{`let direction = Direction.North;
+
+switch (direction) {
+    Direction.North => fmt.print("going north"),
+    Direction.South => fmt.print("going south"),
+    Direction.East  => fmt.print("going east"),
+    Direction.West  => fmt.print("going west"),
+};
+
+# switch on any value
+switch (score // 10) {
+    10 => "A+",
+    9  => "A",
+    8  => "B",
+};`}</Pre>
 
       <h2 id="functions">Functions</h2>
       <p>Functions are values. Assign them with <code>let</code> or <code>const</code>. Return early with <code>return</code> — the last expression in a block is also returned implicitly.</p>
@@ -143,13 +190,13 @@ add5(20);   # 25`}</Pre>
 fib(10);   # 55`}</Pre>
 
       <h3>Higher-order functions</h3>
-      <Note>
-        <code>map</code>, <code>filter</code>, and <code>reduce</code> are not in the stdlib yet because they
-        need evaluator access to call function values. Use <code>for</code> loops in the meantime.
-      </Note>
       <Pre>{`let apply = fn(f, x) { f(x) };
+apply(fn(n) { n * 2 }, 7);   # 14
 
-apply(fn(n) { n * 2 }, 7);   # 14`}</Pre>
+import "arrays";
+let doubled = arrays.map([1, 2, 3], fn(x) { x * 2 });   # [2, 4, 6]
+let evens   = arrays.filter([1,2,3,4], fn(x) { x % 2 == 0 });
+let sum     = arrays.reduce([1,2,3,4], fn(acc, x) { acc + x }, 0);`}</Pre>
 
       <h2 id="arrays">Arrays</h2>
       <Pre>{`let nums = [1, 2, 3, 4, 5];
@@ -187,6 +234,44 @@ admin.name;    # Walon
 guest.name;    # Guest
 guest.active;  # true`}</Pre>
 
+      <h2 id="enums">Enums</h2>
+      <p>
+        Enums define a named set of variants. Access variants with dot notation. Variants compare equal
+        only to themselves, making them safe to use in <code>switch</code> arms.
+      </p>
+      <Pre>{`enum Direction { North, South, East, West }
+enum Status    { Ok, Err, Pending }
+
+let d = Direction.North;
+
+d == Direction.North;   # true
+d == Direction.South;   # false
+
+switch (d) {
+    Direction.North => "up",
+    Direction.South => "down",
+};`}</Pre>
+
+      <h2 id="error-handling">Error handling</h2>
+      <p>
+        Errors in code-lang are values. When a stdlib function fails it returns an error object —
+        it does <strong>not</strong> crash the program. Use <code>is_error(val)</code> to test it.
+      </p>
+      <Pre>{`import "fs";
+
+let content = fs.read_file("maybe.txt");
+
+if (is_error(content)) {
+    fmt.print("file not found");
+} else {
+    fmt.print(content);
+};`}</Pre>
+      <Note>
+        <code>is_error()</code> is a global builtin — no import needed. Errors stored in <code>let</code> or{" "}
+        <code>const</code> are recoverable values. A bare error expression (not assigned) propagates and
+        halts the current block.
+      </Note>
+
       <h2 id="modules">Modules</h2>
 
       <h3>Import stdlib</h3>
@@ -212,6 +297,18 @@ let double = fn(x) { x * 2 };
 import "utils";
 utils.double(5);    # 10
 utils.VERSION;      # 1.0`}</Pre>
+      <p>
+        Use <code>pub</code> to control what is exported. When any <code>pub</code> declaration exists,
+        only those names are accessible from outside the module.
+      </p>
+      <Pre>{`# utils.cl
+pub let greet = fn(name) { "Hello, \${name}!" };
+let _secret   = 42;   # not exported
+
+# main.cl
+import "utils";
+utils.greet("world");   # Hello, world!
+utils._secret;          # error: utils has no public member '_secret'`}</Pre>
 
       <p>See all 12 built-in modules in the <Link href="/docs/stdlib">standard library reference</Link>.</p>
     </>

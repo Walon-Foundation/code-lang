@@ -22,7 +22,7 @@ x86_64-pc-windows-msvc = "windows-2022"
 
 [package]
 name = "code-lang"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "A general-purpose interpreted programming language"
 repository = "https://github.com/Walon-Foundation/code-lang"

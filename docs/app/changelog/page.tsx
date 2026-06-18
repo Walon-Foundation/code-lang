@@ -10,6 +10,30 @@ const CHANGELOG: {
   sections: { title: string; items: string[] }[];
 }[] = [
   {
+    version: "v0.2.1",
+    date: "June 2026",
+    tag: "release",
+    sections: [
+      {
+        title: "Language",
+        items: [
+          "String interpolation — embed expressions directly in strings with ${...} syntax",
+          "for-in loops — iterate arrays with 'for (i in arr)' and hashes with 'for (k, v in hash)'",
+          "switch statement — pattern matching with 'switch (subject) { pattern => body }', compared with ==",
+          "Enum types — define named variant sets with 'enum Direction { North, South, East, West }' and access via 'Direction.North'",
+        ],
+      },
+      {
+        title: "Error handling",
+        items: [
+          "is_error(val) global builtin — test whether a value is an error without importing anything",
+          "Errors stored in let/const are recoverable values — only bare expression statements propagate errors",
+          "Module member errors now name the module: 'fmt has no member x', 'utils has no public member x'",
+        ],
+      },
+    ],
+  },
+  {
     version: "v0.2.0",
     date: "June 2026",
     tag: "release",

@@ -213,7 +213,7 @@ strings.to_upper("hello");  # HELLO`}</Pre>
 
       {MODULES.map((mod) => (
         <section key={mod.name}>
-          <h2>
+          <h2 id={mod.name}>
             <code>{mod.name}</code>
           </h2>
           <p>{mod.desc}</p>

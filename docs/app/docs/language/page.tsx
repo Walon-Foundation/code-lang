@@ -32,13 +32,13 @@ export default function LanguageReference() {
         to a <code>.cl</code> file.
       </p>
 
-      <h2>Comments</h2>
+      <h2 id="comments">Comments</h2>
       <Pre>{`# single-line comment
 
 /* multi-line
    comment */`}</Pre>
 
-      <h2>Variables</h2>
+      <h2 id="variables">Variables</h2>
       <p>
         <code>let</code> declares a mutable variable. <code>const</code> declares a constant —
         reassignment is a runtime error.
@@ -49,7 +49,7 @@ const PI = 3.14159;
 age = 26;      # ok
 PI  = 3;       # error: cannot reassign constant`}</Pre>
 
-      <h2>Types</h2>
+      <h2 id="types">Types</h2>
       <div className="tbl"><table>
         <thead><tr><th>Type</th><th>Literal example</th><th>Notes</th></tr></thead>
         <tbody>
@@ -66,7 +66,7 @@ PI  = 3;       # error: cannot reassign constant`}</Pre>
         </tbody>
       </table></div>
 
-      <h2>Operators</h2>
+      <h2 id="operators">Operators</h2>
       <div className="tbl"><table>
         <thead><tr><th>Category</th><th>Operators</th></tr></thead>
         <tbody>
@@ -86,7 +86,7 @@ let n = 5;
 n++;          # n is now 6
 n += 10;      # n is now 16`}</Pre>
 
-      <h2>Control flow</h2>
+      <h2 id="control-flow">Control flow</h2>
 
       <h3>if / elseif / else</h3>
       <Note>Branches are expressions — the last evaluated value is the result of the whole block.</Note>
@@ -113,7 +113,7 @@ while (i < 5) {
 };`}</Pre>
       <p><code>break</code> and <code>continue</code> work in both <code>while</code> and <code>for</code>.</p>
 
-      <h2>Functions</h2>
+      <h2 id="functions">Functions</h2>
       <p>Functions are values. Assign them with <code>let</code> or <code>const</code>. Return early with <code>return</code> — the last expression in a block is also returned implicitly.</p>
       <Pre>{`let add = fn(a, b) {
     return a + b;
@@ -151,7 +151,7 @@ fib(10);   # 55`}</Pre>
 
 apply(fn(n) { n * 2 }, 7);   # 14`}</Pre>
 
-      <h2>Arrays</h2>
+      <h2 id="arrays">Arrays</h2>
       <Pre>{`let nums = [1, 2, 3, 4, 5];
 
 nums[0];          # 1
@@ -161,7 +161,7 @@ nums[-1];         # last element (if supported)
 let mixed = [1, "hello", true, [2, 3]];`}</Pre>
       <p>See the <Link href="/docs/stdlib">arrays module</Link> for slice, sort, zip, flatten, and 15 more operations.</p>
 
-      <h2>Hashes</h2>
+      <h2 id="hashes">Hashes</h2>
       <Pre>{`let person = { "name": "Alice", "age": 30 };
 
 person["name"];        # Alice
@@ -169,7 +169,7 @@ person.name;           # same — dot access works too
 person["role"] = "admin";   # add or update key`}</Pre>
       <p>Keys can be any type. See the <Link href="/docs/stdlib">hash module</Link> for <code>keys</code>, <code>values</code>, <code>merge</code>, and more.</p>
 
-      <h2>Structs</h2>
+      <h2 id="structs">Structs</h2>
       <p>
         Structs define a named type with default field values. Instantiate with <code>TypeName {"{ fields }"}</code> —
         any field not provided gets its default.
@@ -187,7 +187,7 @@ admin.name;    # Walon
 guest.name;    # Guest
 guest.active;  # true`}</Pre>
 
-      <h2>Modules</h2>
+      <h2 id="modules">Modules</h2>
 
       <h3>Import stdlib</h3>
       <Pre>{`import "math";

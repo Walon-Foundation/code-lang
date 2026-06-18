@@ -44,12 +44,12 @@ body {
 .s-md    { padding-top: 3rem;  padding-bottom: 3rem; }
 .s-page  { padding-top: 4rem;  padding-bottom: 6rem; }
 
-/* Docs two-column (sidebar + content) */
+/* Docs three-column (sidebar + content + TOC) */
 .docs-layout {
   display: flex;
-  gap: 4rem;
-  align-items: flex-start;
-  max-width: 1100px;
+  gap: 3rem;
+  align-items: stretch;
+  max-width: 1320px;
   margin-left: auto;
   margin-right: auto;
   padding: 3rem 1.5rem;
@@ -59,6 +59,23 @@ body {
   width: 180px;
   flex-shrink: 0;
 }
+
+.docs-toc-col {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+/* Sticky inner navs — scroll their own content if taller than viewport */
+.docs-sidebar-col > nav,
+.docs-toc-col > nav {
+  position: sticky;
+  top: 72px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.docs-sidebar-col > nav::-webkit-scrollbar,
+.docs-toc-col > nav::-webkit-scrollbar { display: none; }
 
 /* Changelog entry row */
 .log-entry { display: flex; gap: 3rem; }
@@ -83,6 +100,7 @@ body {
   /* Stack docs sidebar below nav; it's reachable via the nav */
   .docs-layout    { flex-direction: column; gap: 2rem; padding: 2rem 1.125rem; align-items: stretch; }
   .docs-sidebar-col { display: none; }
+  .docs-toc-col   { display: none; }
 
   /* Stack changelog entry */
   .log-entry   { flex-direction: column; gap: 1rem; }
@@ -252,6 +270,15 @@ body {
   .site-footer-inner { flex-direction: column; align-items: flex-start; }
   .footer-links { gap: 1rem; }
 }
+
+/* Hide right TOC on mid-size screens before the full mobile breakpoint */
+@media (max-width: 1100px) {
+  .docs-toc-col { display: none; }
+  .docs-layout  { max-width: 860px; }
+}
+
+/* ─── Anchor offset (sticky navbar) ─────────────── */
+h2[id], h3[id] { scroll-margin-top: 88px; }
 
 /* ─── Docs article prose ─────────────────────────── */
 

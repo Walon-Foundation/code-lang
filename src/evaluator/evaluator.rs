@@ -3,13 +3,16 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     ast::ast::{Expression, Program, Statement},
     lexer::lexer::Lexer,
-    object::object::{CallInfo, Environment, Object},
+    object::object::{CallInfo, Environment, Evaluable, Object},
     parser::parser::Parser,
     token::token::{Token, TokenType},
 };
 
+const MAX_CALL_DEPTH: usize = 500;
+
 pub struct Evaluator {
     pub loop_depth: usize,
+    pub call_depth: usize,
     pub module_cache: HashMap<String, Object>,
 }
 
@@ -19,6 +22,7 @@ impl Evaluator {
     pub fn new() -> Self {
         let mut e = Evaluator {
             loop_depth: 0,
+            call_depth: 0,
             module_cache: HashMap::new(),
         };
         e.preload_stdlib();
@@ -108,18 +112,18 @@ impl Evaluator {
                 Object::Null
             }
 
-            Statement::Import { path } => self.eval_import_statement(path, env),
+            Statement::Import { path, line, column } => self.eval_import_statement(path, *line, *column, env),
 
-            Statement::Break => {
+            Statement::Break { line, column } => {
                 if self.loop_depth == 0 {
-                    return Object::Error { message: "break outside of loop".to_string(), line: 0, column: 0 };
+                    return Object::Error { message: "break outside of loop".to_string(), line: *line, column: *column };
                 }
                 Object::Break
             }
 
-            Statement::Continue => {
+            Statement::Continue { line, column } => {
                 if self.loop_depth == 0 {
-                    return Object::Error { message: "continue outside of loop".to_string(), line: 0, column: 0 };
+                    return Object::Error { message: "continue outside of loop".to_string(), line: *line, column: *column };
                 }
                 Object::Continue
             }
@@ -202,7 +206,7 @@ impl Evaluator {
                 if matches!(func, Object::Error { .. }) { return func; }
                 let args = self.eval_args(argument, env);
                 if args.len() == 1 && matches!(args[0], Object::Error { .. }) {
-                    return args.into_iter().next().unwrap();
+                    return args.into_iter().next().unwrap_or(Object::Null);
                 }
                 self.apply_function(func, args, *line, *column)
             }
@@ -210,7 +214,7 @@ impl Evaluator {
             Expression::Array { element, .. } => {
                 let elems = self.eval_args(element, env);
                 if elems.len() == 1 && matches!(elems[0], Object::Error { .. }) {
-                    return elems.into_iter().next().unwrap();
+                    return elems.into_iter().next().unwrap_or(Object::Null);
                 }
                 Object::Array(elems)
             }
@@ -427,9 +431,15 @@ impl Evaluator {
 
     fn eval_integer_infix(&self, op: &TokenType, l: i64, r: i64, line: usize, column: usize) -> Object {
         match op {
-            TokenType::Plus | TokenType::AddAssign => Object::Integer(l + r),
-            TokenType::Minus | TokenType::SubAssign => Object::Integer(l - r),
-            TokenType::Asterisk | TokenType::MulAssign => Object::Integer(l * r),
+            TokenType::Plus | TokenType::AddAssign => l.checked_add(r)
+                .map(Object::Integer)
+                .unwrap_or_else(|| Object::Error { message: format!("integer overflow: {} + {}", l, r), line, column }),
+            TokenType::Minus | TokenType::SubAssign => l.checked_sub(r)
+                .map(Object::Integer)
+                .unwrap_or_else(|| Object::Error { message: format!("integer overflow: {} - {}", l, r), line, column }),
+            TokenType::Asterisk | TokenType::MulAssign => l.checked_mul(r)
+                .map(Object::Integer)
+                .unwrap_or_else(|| Object::Error { message: format!("integer overflow: {} * {}", l, r), line, column }),
             TokenType::SLASH | TokenType::QuoAssign => {
                 if r == 0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
                 Object::Integer(l / r)
@@ -438,7 +448,13 @@ impl Evaluator {
                 if r == 0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
                 Object::Integer(l % r)
             }
-            TokenType::Square => Object::Integer((l as f64).powf(r as f64) as i64),
+            TokenType::Square => {
+                let result = (l as f64).powf(r as f64);
+                if result > i64::MAX as f64 || result < i64::MIN as f64 {
+                    return Object::Error { message: format!("integer overflow: {} ** {}", l, r), line, column };
+                }
+                Object::Integer(result as i64)
+            }
             TokenType::Floor => {
                 if r == 0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
                 Object::Integer(((l as f64) / (r as f64)).floor() as i64)
@@ -453,23 +469,33 @@ impl Evaluator {
         }
     }
 
+    fn float_guard(v: f64, line: usize, column: usize) -> Object {
+        if v.is_nan() {
+            Object::Error { message: "floating-point operation produced NaN".to_string(), line, column }
+        } else if v.is_infinite() {
+            Object::Error { message: "floating-point operation produced Infinity".to_string(), line, column }
+        } else {
+            Object::Float(v)
+        }
+    }
+
     fn eval_float_infix(&self, op: &TokenType, l: f64, r: f64, line: usize, column: usize) -> Object {
         match op {
-            TokenType::Plus | TokenType::AddAssign => Object::Float(l + r),
-            TokenType::Minus | TokenType::SubAssign => Object::Float(l - r),
-            TokenType::Asterisk | TokenType::MulAssign => Object::Float(l * r),
+            TokenType::Plus | TokenType::AddAssign => Self::float_guard(l + r, line, column),
+            TokenType::Minus | TokenType::SubAssign => Self::float_guard(l - r, line, column),
+            TokenType::Asterisk | TokenType::MulAssign => Self::float_guard(l * r, line, column),
             TokenType::SLASH | TokenType::QuoAssign => {
                 if r == 0.0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
-                Object::Float(l / r)
+                Self::float_guard(l / r, line, column)
             }
             TokenType::Rem | TokenType::RemAssign => {
                 if r == 0.0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
-                Object::Float(l % r)
+                Self::float_guard(l % r, line, column)
             }
-            TokenType::Square => Object::Float(l.powf(r)),
+            TokenType::Square => Self::float_guard(l.powf(r), line, column),
             TokenType::Floor => {
                 if r == 0.0 { return Object::Error { message: "division by zero".to_string(), line, column }; }
-                Object::Float((l / r).floor())
+                Self::float_guard((l / r).floor(), line, column)
             }
             TokenType::LT => Object::Bool(l < r),
             TokenType::GT => Object::Bool(l > r),
@@ -606,10 +632,14 @@ impl Evaluator {
             }
             (Object::StringType(s), Object::Integer(i)) => {
                 let i = *i;
-                if i < 0 || i as usize >= s.len() {
-                    return Object::Error { message: format!("index {} out of range (len {})", i, s.len()), line, column };
+                let char_count = s.chars().count();
+                if i < 0 || i as usize >= char_count {
+                    return Object::Error { message: format!("index {} out of range (len {})", i, char_count), line, column };
                 }
-                Object::Char(s.chars().nth(i as usize).unwrap())
+                match s.chars().nth(i as usize) {
+                    Some(c) => Object::Char(c),
+                    None => Object::Error { message: format!("index {} out of range", i), line, column },
+                }
             }
             _ => Object::Error { message: format!("index operator not supported: {}", left.type_name()), line, column },
         }
@@ -646,22 +676,37 @@ impl Evaluator {
         result
     }
 
-    fn apply_function(&mut self, func: Object, args: Vec<Object>, line: usize, column: usize) -> Object {
+    pub fn apply_function(&mut self, func: Object, args: Vec<Object>, line: usize, column: usize) -> Object {
         match func {
             Object::Function { parameters, body, env: func_env } => {
+                if args.len() != parameters.len() {
+                    return Object::Error {
+                        message: format!("wrong number of arguments: expected {}, got {}", parameters.len(), args.len()),
+                        line, column,
+                    };
+                }
+                if self.call_depth >= MAX_CALL_DEPTH {
+                    return Object::Error {
+                        message: format!("maximum call depth exceeded ({})", MAX_CALL_DEPTH),
+                        line, column,
+                    };
+                }
                 let extended = Environment::new_enclosed(Rc::clone(&func_env));
                 for (param, arg) in parameters.iter().zip(args.iter()) {
                     if let Expression::Ident { value, .. } = param {
                         extended.borrow_mut().set(value.clone(), arg.clone());
                     }
                 }
+                self.call_depth += 1;
                 let result = self.eval_statement(&body, &extended);
+                self.call_depth -= 1;
                 match result {
                     Object::Return(v) => *v,
                     other => other,
                 }
             }
             Object::Builtin(f) => f(args, CallInfo { line, column }),
+            Object::BuiltinHigherOrder(f) => f(args, CallInfo { line, column }, self),
             _ => Object::Error { message: format!("not a function: {}", func.type_name()), line, column },
         }
     }
@@ -715,7 +760,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_import_statement(&mut self, path: &String, env: &Env) -> Object {
+    fn eval_import_statement(&mut self, path: &String, line: usize, column: usize, env: &Env) -> Object {
         if let Some(module) = self.module_cache.get(path) {
             let module = module.clone();
             env.borrow_mut().set(path.to_string(), module.clone());
@@ -725,12 +770,17 @@ impl Evaluator {
         let file_name = format!("{}.cl", path);
         let content = match std::fs::read_to_string(&file_name) {
             Ok(c) => c,
-            Err(e) => return Object::Error { message: format!("could not read module \"{}\": {}", path, e), line: 0, column: 0 },
+            Err(e) => return Object::Error { message: format!("could not read module \"{}\": {}", path, e), line, column },
         };
 
         let lexer = Lexer::new(content);
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program();
+
+        if !parser.errors.is_empty() {
+            let msg = format!("parse errors in \"{}\": {}", path, parser.errors.join("; "));
+            return Object::Error { message: msg, line, column };
+        }
 
         let module_env = Environment::new_enclosed(Rc::clone(env));
         self.eval(&program, &module_env);
@@ -742,5 +792,11 @@ impl Evaluator {
         self.module_cache.insert(path.to_string(), module.clone());
 
         module
+    }
+}
+
+impl Evaluable for Evaluator {
+    fn call_function(&mut self, func: Object, args: Vec<Object>, info: CallInfo) -> Object {
+        self.apply_function(func, args, info.line, info.column)
     }
 }

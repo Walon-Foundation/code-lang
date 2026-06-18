@@ -107,6 +107,21 @@ fn entries(args: Vec<Object>, info: CallInfo) -> Object {
     }
 }
 
+fn get(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 3 {
+        return Object::Error { message: "hash.get takes 3 arguments".to_string(), line: info.line, column: info.column };
+    }
+    match &args[0] {
+        Object::Hash(pairs) => {
+            for (k, v) in pairs {
+                if obj_eq(k, &args[1]) { return v.clone(); }
+            }
+            args[2].clone()
+        }
+        _ => Object::Error { message: format!("hash.get expects HASH as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    }
+}
+
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("keys".to_string(),    Object::Builtin(keys));
@@ -116,5 +131,6 @@ pub fn module() -> Object {
     members.insert("delete".to_string(),  Object::Builtin(delete));
     members.insert("len".to_string(),     Object::Builtin(len));
     members.insert("entries".to_string(), Object::Builtin(entries));
+    members.insert("get".to_string(),     Object::Builtin(get));
     Object::Module { members }
 }

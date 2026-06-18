@@ -620,13 +620,17 @@ impl Parser {
     }
 
     fn parse_continue_statement(&mut self) -> Option<Statement> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
         self.expect_peak(TokenType::Semicolon);
-        Some(Statement::Continue)
+        Some(Statement::Continue { line, column })
     }
 
-    fn parse_break_statement(&mut self) -> Option<Statement>{
+    fn parse_break_statement(&mut self) -> Option<Statement> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
         self.expect_peak(TokenType::Semicolon);
-        Some(Statement::Break)
+        Some(Statement::Break { line, column })
     }
 
     fn parse_struct_statement(&mut self) -> Option<Statement> {
@@ -683,6 +687,9 @@ impl Parser {
     }
 
     fn parse_import_statement(&mut self) -> Option<Statement> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+
         if !matches!(self.peak_token.token_type, TokenType::StringType(_)) {
             self.peak_error(TokenType::StringType(String::new()));
             return None;
@@ -698,7 +705,7 @@ impl Parser {
             return None;
         }
 
-        Some(Statement::Import { path })
+        Some(Statement::Import { path, line, column })
     }
     
     fn parse_let_statement(&mut self) -> Option<Statement> {

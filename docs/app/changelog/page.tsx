@@ -10,6 +10,43 @@ const CHANGELOG: {
   sections: { title: string; items: string[] }[];
 }[] = [
   {
+    version: "v0.11.0",
+    date: "June 2026",
+    tag: "release",
+    sections: [
+      {
+        title: "Error quality",
+        items: [
+          "All errors now show the source line with a caret pointing to the exact column",
+          "break and continue outside a loop now report the correct line/column",
+          "import errors now point to the import statement location",
+          "Hint messages added for common mistakes — type mismatches, undefined variables, arity errors, and more",
+          "REPL now checks for parse errors before evaluating, preventing confusing partial-AST results",
+          "Parse errors in imported .cl files are surfaced with the file name",
+        ],
+      },
+      {
+        title: "Safety",
+        items: [
+          "Recursion depth limit of 500 — infinite recursion now gives a clean error instead of a segfault",
+          "Integer arithmetic (+ - * **) now uses checked operations — overflow produces a clear error",
+          "Float operations that produce NaN or Infinity now return an error",
+          "Function calls enforce arity — wrong argument count is an error, not silent truncation",
+        ],
+      },
+      {
+        title: "Standard library",
+        items: [
+          "arrays.map, filter, reduce, find, any, all — higher-order functions that accept user-defined functions",
+          "fmt.format(template, ...args) — printf-style string formatting with %s %d %f %%",
+          "math.log2, math.sign, math.gcd, math.lcm",
+          "strings.lines, strings.is_empty, strings.pad_left, strings.pad_right",
+          "hash.get(h, key, default) — safe key access with a fallback value",
+        ],
+      },
+    ],
+  },
+  {
     version: "v0.1.0-dev",
     date: "June 2026",
     tag: "dev",

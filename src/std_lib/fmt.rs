@@ -90,6 +90,40 @@ fn clear(args: Vec<Object>, info: CallInfo) -> Object {
     Object::Null
 }
 
+fn format_fn(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.is_empty() {
+        return Object::Error { message: "fmt.format expects at least 1 argument".to_string(), line: info.line, column: info.column };
+    }
+    let template = match &args[0] {
+        Object::StringType(s) => s.clone(),
+        _ => return Object::Error { message: format!("fmt.format: first argument must be STRING, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let mut result = String::new();
+    let mut arg_idx = 1;
+    let chars: Vec<char> = template.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i] == '%' && i + 1 < chars.len() {
+            match chars[i + 1] {
+                '%' => { result.push('%'); i += 2; }
+                's' | 'd' | 'f' => {
+                    if arg_idx >= args.len() {
+                        return Object::Error { message: format!("fmt.format: not enough arguments for format string"), line: info.line, column: info.column };
+                    }
+                    result.push_str(&format!("{}", args[arg_idx]));
+                    arg_idx += 1;
+                    i += 2;
+                }
+                _ => { result.push(chars[i]); i += 1; }
+            }
+        } else {
+            result.push(chars[i]);
+            i += 1;
+        }
+    }
+    Object::StringType(result)
+}
+
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("print".to_string(),   Object::Builtin(print));
@@ -100,5 +134,6 @@ pub fn module() -> Object {
     members.insert("to_str".to_string(),  Object::Builtin(to_str));
     members.insert("input".to_string(),   Object::Builtin(input));
     members.insert("clear".to_string(),   Object::Builtin(clear));
+    members.insert("format".to_string(),  Object::Builtin(format_fn));
     Object::Module { members }
 }

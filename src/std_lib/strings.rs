@@ -286,5 +286,82 @@ pub fn module() -> Object {
     members.insert("from_chars".to_string(),  Object::Builtin(from_chars));
     members.insert("parse_int".to_string(),   Object::Builtin(parse_int));
     members.insert("parse_float".to_string(), Object::Builtin(parse_float));
+    members.insert("lines".to_string(),       Object::Builtin(lines));
+    members.insert("is_empty".to_string(),    Object::Builtin(is_empty));
+    members.insert("pad_left".to_string(),    Object::Builtin(pad_left));
+    members.insert("pad_right".to_string(),   Object::Builtin(pad_right));
     Object::Module { members }
+}
+
+fn lines(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 1 {
+        return Object::Error { message: "strings.lines takes 1 argument".to_string(), line: info.line, column: info.column };
+    }
+    match &args[0] {
+        Object::StringType(s) => {
+            let parts: Vec<Object> = s.lines().map(|l| Object::StringType(l.to_string())).collect();
+            Object::Array(parts)
+        }
+        _ => Object::Error { message: format!("strings.lines expects STRING, got {}", args[0].type_name()), line: info.line, column: info.column },
+    }
+}
+
+fn is_empty(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 1 {
+        return Object::Error { message: "strings.is_empty takes 1 argument".to_string(), line: info.line, column: info.column };
+    }
+    match &args[0] {
+        Object::StringType(s) => Object::Bool(s.is_empty()),
+        _ => Object::Error { message: format!("strings.is_empty expects STRING, got {}", args[0].type_name()), line: info.line, column: info.column },
+    }
+}
+
+fn pad_left(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 3 {
+        return Object::Error { message: "strings.pad_left takes 3 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let s = match &args[0] {
+        Object::StringType(s) => s.clone(),
+        _ => return Object::Error { message: format!("strings.pad_left expects STRING as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let width = match &args[1] {
+        Object::Integer(n) => *n as usize,
+        _ => return Object::Error { message: format!("strings.pad_left expects INTEGER as second argument, got {}", args[1].type_name()), line: info.line, column: info.column },
+    };
+    let pad_char = match &args[2] {
+        Object::StringType(c) => c.chars().next().unwrap_or(' '),
+        Object::Char(c) => *c,
+        _ => return Object::Error { message: format!("strings.pad_left expects STRING or CHAR as third argument, got {}", args[2].type_name()), line: info.line, column: info.column },
+    };
+    let char_count = s.chars().count();
+    if char_count >= width {
+        return Object::StringType(s);
+    }
+    let padding: String = std::iter::repeat(pad_char).take(width - char_count).collect();
+    Object::StringType(format!("{}{}", padding, s))
+}
+
+fn pad_right(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 3 {
+        return Object::Error { message: "strings.pad_right takes 3 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let s = match &args[0] {
+        Object::StringType(s) => s.clone(),
+        _ => return Object::Error { message: format!("strings.pad_right expects STRING as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let width = match &args[1] {
+        Object::Integer(n) => *n as usize,
+        _ => return Object::Error { message: format!("strings.pad_right expects INTEGER as second argument, got {}", args[1].type_name()), line: info.line, column: info.column },
+    };
+    let pad_char = match &args[2] {
+        Object::StringType(c) => c.chars().next().unwrap_or(' '),
+        Object::Char(c) => *c,
+        _ => return Object::Error { message: format!("strings.pad_right expects STRING or CHAR as third argument, got {}", args[2].type_name()), line: info.line, column: info.column },
+    };
+    let char_count = s.chars().count();
+    if char_count >= width {
+        return Object::StringType(s);
+    }
+    let padding: String = std::iter::repeat(pad_char).take(width - char_count).collect();
+    Object::StringType(format!("{}{}", s, padding))
 }

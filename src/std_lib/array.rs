@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::object::object::{CallInfo, Object};
+use crate::object::object::{CallInfo, Evaluable, Object};
 
 fn obj_eq(a: &Object, b: &Object) -> bool {
     match (a, b) {
@@ -352,6 +352,119 @@ fn zip(args: Vec<Object>, info: CallInfo) -> Object {
     Object::Array(pairs)
 }
 
+fn array_map(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "arrays.map expects 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.map expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    let mut result = Vec::new();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![elem], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        result.push(out);
+    }
+    Object::Array(result)
+}
+
+fn array_filter(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "arrays.filter expects 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.filter expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    let mut result = Vec::new();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![elem.clone()], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        if !matches!(out, Object::Bool(false) | Object::Null) {
+            result.push(elem);
+        }
+    }
+    Object::Array(result)
+}
+
+fn array_reduce(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 3 {
+        return Object::Error { message: "arrays.reduce expects 3 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.reduce expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    let mut acc = args[2].clone();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![acc, elem], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        acc = out;
+    }
+    acc
+}
+
+fn array_find(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "arrays.find expects 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.find expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![elem.clone()], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        if !matches!(out, Object::Bool(false) | Object::Null) {
+            return elem;
+        }
+    }
+    Object::Null
+}
+
+fn array_any(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "arrays.any expects 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.any expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![elem], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        if !matches!(out, Object::Bool(false) | Object::Null) {
+            return Object::Bool(true);
+        }
+    }
+    Object::Bool(false)
+}
+
+fn array_all(args: Vec<Object>, info: CallInfo, eval: &mut dyn Evaluable) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "arrays.all expects 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let elems = match &args[0] {
+        Object::Array(elems) => elems.clone(),
+        _ => return Object::Error { message: format!("arrays.all expects ARRAY as first argument, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let func = args[1].clone();
+    for elem in elems {
+        let out = eval.call_function(func.clone(), vec![elem], info);
+        if matches!(out, Object::Error { .. }) { return out; }
+        if matches!(out, Object::Bool(false) | Object::Null) {
+            return Object::Bool(false);
+        }
+    }
+    Object::Bool(true)
+}
+
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("first".to_string(),    Object::Builtin(first));
@@ -374,5 +487,11 @@ pub fn module() -> Object {
     members.insert("sort".to_string(),     Object::Builtin(sort));
     members.insert("unique".to_string(),   Object::Builtin(unique));
     members.insert("zip".to_string(),      Object::Builtin(zip));
+    members.insert("map".to_string(),      Object::BuiltinHigherOrder(array_map));
+    members.insert("filter".to_string(),   Object::BuiltinHigherOrder(array_filter));
+    members.insert("reduce".to_string(),   Object::BuiltinHigherOrder(array_reduce));
+    members.insert("find".to_string(),     Object::BuiltinHigherOrder(array_find));
+    members.insert("any".to_string(),      Object::BuiltinHigherOrder(array_any));
+    members.insert("all".to_string(),      Object::BuiltinHigherOrder(array_all));
     Object::Module { members }
 }

@@ -199,6 +199,74 @@ fn clamp(args: Vec<Object>, info: CallInfo) -> Object {
     Object::Float(v.clamp(lo, hi))
 }
 
+fn log2(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 1 {
+        return Object::Error { message: "math.log2 takes 1 argument".to_string(), line: info.line, column: info.column };
+    }
+    match to_f64(&args[0]) {
+        Some(v) => Object::Float(v.log2()),
+        None => Object::Error { message: format!("math.log2 expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
+    }
+}
+
+fn sign(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 1 {
+        return Object::Error { message: "math.sign takes 1 argument".to_string(), line: info.line, column: info.column };
+    }
+    match &args[0] {
+        Object::Integer(n) => Object::Integer(n.signum()),
+        Object::Float(f) => Object::Float(f.signum()),
+        _ => Object::Error { message: format!("math.sign expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
+    }
+}
+
+fn gcd(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "math.gcd takes 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let a = match &args[0] {
+        Object::Integer(n) => n.abs(),
+        _ => return Object::Error { message: format!("math.gcd expects INTEGER arguments, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let b = match &args[1] {
+        Object::Integer(n) => n.abs(),
+        _ => return Object::Error { message: format!("math.gcd expects INTEGER arguments, got {}", args[1].type_name()), line: info.line, column: info.column },
+    };
+    let mut x = a;
+    let mut y = b;
+    while y != 0 {
+        let t = y;
+        y = x % y;
+        x = t;
+    }
+    Object::Integer(x)
+}
+
+fn lcm(args: Vec<Object>, info: CallInfo) -> Object {
+    if args.len() != 2 {
+        return Object::Error { message: "math.lcm takes 2 arguments".to_string(), line: info.line, column: info.column };
+    }
+    let a = match &args[0] {
+        Object::Integer(n) => n.abs(),
+        _ => return Object::Error { message: format!("math.lcm expects INTEGER arguments, got {}", args[0].type_name()), line: info.line, column: info.column },
+    };
+    let b = match &args[1] {
+        Object::Integer(n) => n.abs(),
+        _ => return Object::Error { message: format!("math.lcm expects INTEGER arguments, got {}", args[1].type_name()), line: info.line, column: info.column },
+    };
+    if a == 0 || b == 0 {
+        return Object::Integer(0);
+    }
+    let mut x = a;
+    let mut y = b;
+    while y != 0 {
+        let t = y;
+        y = x % y;
+        x = t;
+    }
+    Object::Integer(a / x * b)
+}
+
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("PI".to_string(),    Object::Float(std::f64::consts::PI));
@@ -212,6 +280,7 @@ pub fn module() -> Object {
     members.insert("pow".to_string(),   Object::Builtin(pow));
     members.insert("log".to_string(),   Object::Builtin(log));
     members.insert("log10".to_string(), Object::Builtin(log10));
+    members.insert("log2".to_string(),  Object::Builtin(log2));
     members.insert("exp".to_string(),   Object::Builtin(exp));
     members.insert("sin".to_string(),   Object::Builtin(sin));
     members.insert("cos".to_string(),   Object::Builtin(cos));
@@ -219,5 +288,8 @@ pub fn module() -> Object {
     members.insert("min".to_string(),   Object::Builtin(min));
     members.insert("max".to_string(),   Object::Builtin(max));
     members.insert("clamp".to_string(), Object::Builtin(clamp));
+    members.insert("sign".to_string(),  Object::Builtin(sign));
+    members.insert("gcd".to_string(),   Object::Builtin(gcd));
+    members.insert("lcm".to_string(),   Object::Builtin(lcm));
     Object::Module { members }
 }

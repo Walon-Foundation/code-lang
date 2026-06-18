@@ -8,6 +8,10 @@ pub struct CallInfo {
     pub column: usize,
 }
 
+pub trait Evaluable {
+    fn call_function(&mut self, func: Object, args: Vec<Object>, info: CallInfo) -> Object;
+}
+
 #[derive(Clone)]
 pub enum Object {
     Integer(i64),
@@ -40,7 +44,8 @@ pub enum Object {
     },
     Array(Vec<Object>),
     Hash(Vec<(Object, Object)>),
-    Builtin(fn(Vec<Object>, CallInfo) -> Object)
+    Builtin(fn(Vec<Object>, CallInfo) -> Object),
+    BuiltinHigherOrder(fn(Vec<Object>, CallInfo, &mut dyn Evaluable) -> Object),
 }
 
 impl std::fmt::Debug for Object {
@@ -67,6 +72,7 @@ impl Object {
             Object::StructInstance { .. } => "STRUCT_INSTANCE",
             Object::Module { .. } => "MODULE",
             Object::Builtin(_) => "BUILTIN",
+            Object::BuiltinHigherOrder(_) => "BUILTIN",
             Object::Function { .. } => "FUNCTION",
             Object::Array(_) => "ARRAY",
             Object::Hash(_) => "HASH",
@@ -93,7 +99,7 @@ impl std::fmt::Display for Object {
                 write!(f, "{} {{ {} }}", type_name, pairs.join(", "))
             },
             Object::Module { .. } => write!(f, "[Module]"),
-            Object::Builtin(_) => write!(f, "[Builtin]"),
+            Object::Builtin(_) | Object::BuiltinHigherOrder(_) => write!(f, "[Builtin]"),
             Object::Function { parameters, .. } => {
                 let params: Vec<String> = parameters.iter().map(|p| format!("{:?}", p)).collect();
                 write!(f, "fn({})", params.join(", "))

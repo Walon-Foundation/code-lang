@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ast::ast::{ElseIF, Expression, Statement}, lexer::lexer::Lexer, token::token::{Token, TokenType}};
+use crate::{ast::ast::{ElseIF, Expression, Statement, StringSegment}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
 use crate::ast::ast::Program;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
@@ -161,13 +161,7 @@ impl Parser {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        if !self.expect_peak(TokenType::LParan) {
-            return None;
-        }
-
-        self.next_token(); // move to init
-
-        // init — parse_statement consumes its own semicolon, leaving cur = ';'
+        // '(' already consumed by caller, cur = init statement start
         let init = self.parse_statement()?;
 
         self.next_token(); // move past ';' to condition
@@ -294,7 +288,7 @@ impl Parser {
             TokenType::Ident(_)      => self.parse_identifier(),              // IDENT
             TokenType::Int(_)        => self.parse_integer_literal(),         // INT
             TokenType::Float(_)      => self.parse_float_literal(),           // FLOAT
-            TokenType::StringType(_) => self.parse_string_literal(),          // STRING
+            TokenType::InterpolatedString(_) => self.parse_string_literal(),   // STRING
             TokenType::Char(_)       => self.parse_char_literal(),            // CHAR
             TokenType::True | TokenType::False => self.parse_boolean(),       // TRUE, FALSE
             TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),       // BANG, MINUS
@@ -304,10 +298,56 @@ impl Parser {
             TokenType::Function      => self.parse_function_literal(),        // FUNCTION
             TokenType::LBracket      => self.parse_array_literal(),           // LBRACKET
             TokenType::LBrace        => self.parse_hash_literal(),            // LBRACE
-            TokenType::For           => self.parse_for_expression(),          // FOR
+            TokenType::For           => {
+                if !self.expect_peak(TokenType::LParan) { return None; }
+                self.next_token(); // cur = first token inside '('
+                if matches!(self.cur_token.token_type, TokenType::Let | TokenType::Const) {
+                    self.parse_for_expression()
+                } else {
+                    self.parse_for_in_expression()
+                }
+            },          // FOR
             TokenType::While         => self.parse_while_expression(),        // WHILE
             _ => None,           // map-miss → noPrefixParseFnError
         }
+    }
+
+    fn parse_for_in_expression(&mut self) -> Option<Expression>{
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+
+        let key = match self.cur_token.token_type.clone() {
+            TokenType::Ident(item) => item,
+            _ => return None
+        };
+
+        let mut maybe_value = None;
+        if self.peak_token_is(&TokenType::Comma) {
+            self.next_token(); // cur = ','
+            self.next_token(); // cur = value ident
+            maybe_value = match self.cur_token.token_type.clone() {
+                TokenType::Ident(value) => Some(value),
+                _ => return None,
+            };
+        }
+
+        if !self.expect_peak(TokenType::In) {
+            return None;
+        }
+
+        self.next_token();
+        let iterable = self.parse_expression(Precedences::Lowest)?;
+
+        if !self.expect_peak(TokenType::RParen) {
+            return None;
+        }
+
+        if !self.expect_peak(TokenType::LBrace) {
+            return None;
+        }
+        let body = self.parse_block_statement()?;
+
+        Some(Expression::ForIn { key, value: maybe_value, iterable:Box::new(iterable), body:Box::new(body), line, column })
     }
 
     fn parse_array_literal(&mut self) -> Option<Expression>{
@@ -423,12 +463,25 @@ impl Parser {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        let value = match self.cur_token.token_type.clone() {
-            TokenType::StringType(value) => value.clone(),
-            _ => return None
+        let raw_parts = match self.cur_token.token_type.clone() {
+            TokenType::InterpolatedString(parts) => parts,
+            _ => return None,
         };
 
-        Some(Expression::StringLit { value, line, column })
+        let mut segments = Vec::new();
+        for part in raw_parts {
+            match part {
+                StringPart::Literal(s) => segments.push(StringSegment::Literal(s)),
+                StringPart::Expr(src) => {
+                    let lexer = Lexer::new(src);
+                    let mut sub = Parser::new(lexer);
+                    let expr = sub.parse_expression(Precedences::Lowest)?;
+                    segments.push(StringSegment::Expr(Box::new(expr)));
+                }
+            }
+        }
+
+        Some(Expression::InterpolatedString { parts: segments, line, column })
     }
 
     fn parse_identifier(&self) -> Option<Expression> {
@@ -690,14 +743,20 @@ impl Parser {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        if !matches!(self.peak_token.token_type, TokenType::StringType(_)) {
-            self.peak_error(TokenType::StringType(String::new()));
+        if !matches!(self.peak_token.token_type, TokenType::InterpolatedString(_)) {
+            self.peak_error(TokenType::InterpolatedString(vec![]));
             return None;
         }
         self.next_token();
 
         let path = match &self.cur_token.token_type {
-            TokenType::StringType(s) => s.clone(),
+            TokenType::InterpolatedString(parts) => match parts.as_slice() {
+                [StringPart::Literal(s)] => s.clone(),
+                _ => {
+                    self.errors.push("import path must be a plain string".to_string());
+                    return None;
+                }
+            },
             _ => return None,
         };
 
@@ -738,18 +797,18 @@ impl Parser {
     fn parse_expression(&mut self, precedences: Precedences) -> Option<Expression> {
         let mut left_exp = self.parse_prefix()?;
 
-        if self.peak_token_is(&TokenType::LBrace){
+        if self.peak_token_is(&TokenType::LBrace) {
             return self.parse_struct_literal(left_exp);
         }
 
         while !self.peak_token_is(&TokenType::Semicolon) && precedences < self.peak_precedence() {
-            if !self.has_infix(&self.peak_token.token_type){
-                return Some(left_exp)
+            if !self.has_infix(&self.peak_token.token_type) {
+                return Some(left_exp);
             }
 
             self.next_token();
             left_exp = self.parse_infix(left_exp)?
-        };
+        }
 
         Some(left_exp)
     }

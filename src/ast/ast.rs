@@ -2,6 +2,12 @@ use std::collections::HashMap;
 
 use crate::token::token::Token;
 
+#[derive(Debug, Clone)]
+pub enum StringSegment {
+    Literal(String),
+    Expr(Box<Expression>),
+}
+
 #[derive(Debug)]
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -35,7 +41,9 @@ pub enum Expression {
     Float { value: f64, line: usize, column: usize },
     Char {value:char, line: usize, column: usize },
     Boolean { value: bool, line: usize, column: usize },
-    StringLit { value: String, line: usize, column: usize },
+    InterpolatedString {
+        parts: Vec<StringSegment>, line: usize, column: usize
+    },
     Prefix { op: Token, right: Box<Expression>, line: usize, column: usize },
     Infix { left: Box<Expression>, op: Token, right: Box<Expression>, line: usize, column: usize },
     If {
@@ -103,6 +111,14 @@ pub enum Expression {
     },
     Array {
         element: Vec<Expression>,
+        line: usize,
+        column: usize
+    },
+    ForIn {
+        key: String,
+        value: Option<String>,
+        iterable:Box<Expression>,
+        body: Box<Statement>,
         line: usize,
         column: usize
     }

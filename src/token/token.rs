@@ -1,3 +1,11 @@
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum StringPart{
+    Literal(String),
+    Expr(String)
+}
+
+
 #[derive(Debug, PartialEq,Clone)]
 pub enum TokenType {
     // Keywords
@@ -15,13 +23,20 @@ pub enum TokenType {
     Break,
     Import,
     Struct,
+    In,
     Continue,
     Ident(String),
 
     //Identifiers
     Int(isize),
-    StringType(String),
+
+    //String stuff
+    InterpolatedString(Vec<StringPart>),
+     
+    //Float
     Float(f64),
+    
+    //char
     Char(char),
 
     //operators
@@ -99,6 +114,7 @@ pub fn lookup_ident(ident: &str) -> TokenType {
         "while"    => TokenType::While,
         "return"   => TokenType::Return,
         "break"    => TokenType::Break,
+        "in"       => TokenType::In,
         "continue" => TokenType::Continue,
         "import"   => TokenType::Import,
         "struct"   => TokenType::Struct,

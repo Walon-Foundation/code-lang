@@ -1,9 +1,9 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::ast::{Expression, Program, Statement},
+    ast::ast::{Expression, Program, Statement, StringSegment},
     lexer::lexer::Lexer,
-    object::object::{CallInfo, Environment, Evaluable, Object},
+    object::object::{CallInfo, Environment, Evaluable, Object::{self, Break}},
     parser::parser::Parser,
     token::token::{Token, TokenType},
 };
@@ -134,7 +134,23 @@ impl Evaluator {
         match expr {
             Expression::Int { value, .. } => Object::Integer(*value as i64),
             Expression::Float { value, .. } => Object::Float(*value),
-            Expression::StringLit { value, .. } => Object::StringType(value.clone()),
+            Expression::InterpolatedString { parts, .. } => {
+                let mut result = String::new();
+                for part in parts {
+                    match part {
+                        StringSegment::Literal(s) => result.push_str(s),
+                        StringSegment::Expr(expr) => {
+                            let val = self.eval_expression(&&*expr, env);
+                            if matches!(val, Object::Error { .. }) {
+                                return val;
+                            }
+                            result.push_str(&val.to_string());
+                        }
+                    }
+                }
+
+                Object::StringType(result)
+            },
             Expression::Char { value, .. } => Object::Char(*value),
             Expression::Boolean { value, .. } => Object::Bool(*value),
 
@@ -295,6 +311,64 @@ impl Evaluator {
                 }
                 self.loop_depth -= 1;
                 result
+            }
+
+            Expression::ForIn { key, value, iterable, body, line, column } => {
+                let iterable = self.eval_expression(iterable, env);
+                self.loop_depth += 1;
+
+                match iterable {
+                    Object::Array(elems) => {
+                        for elem in elems {
+                            let loop_env = Environment::new_enclosed(Rc::clone(env));
+                            loop_env.borrow_mut().set(key.to_string(), elem);
+                            let result = self.eval_statement(body, &loop_env);
+                            match result {
+                                Object::Break => break,
+                                Object::Continue => continue,
+                                Object::Error { .. } | Object::Return(_) => return result,
+                                _ => {}
+                            }
+                        }
+                    }
+
+                    Object::Hash(pairs) => {
+                        let some_value = match value {
+                            None => return Object::Error { message: "hash iteration requires two variables: for k, v in hash".to_string(), line: *line, column: *column },
+                            Some(v) => v,
+                        };
+                        for (k, v) in pairs {
+                            let loop_env = Environment::new_enclosed(Rc::clone(env));
+                            loop_env.borrow_mut().set(key.to_string(), k);
+                            loop_env.borrow_mut().set(some_value.clone(), v);
+                            let result = self.eval_statement(body, &loop_env);
+                            match result {
+                                Object::Break => break,
+                                Object::Continue => continue,
+                                Object::Error { .. } | Object::Return(_) => return result,
+                                _ => {}
+                            }
+                        }
+                    }
+
+                    Object::StringType(s) => {
+                        for ch in s.chars() {
+                            let loop_env = Environment::new_enclosed(Rc::clone(env));
+                            loop_env.borrow_mut().set(key.to_string(), Object::Char(ch));
+                            let result = self.eval_statement(body, &loop_env);
+                            match result {
+                                Object::Break => break,
+                                Object::Continue => continue,
+                                Object::Error { .. } | Object::Return(_) => return result,
+                                _ => {}
+                            }
+                        }
+                    }
+
+                    _ => return Object::Error { message: format!("cannot iterate over {}", iterable.type_name()), line: *line, column: *column }
+                }
+
+                Object::Null
             }
 
             Expression::Update { operator, target, prefix, line, column } => {

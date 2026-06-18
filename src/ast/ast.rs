@@ -1,6 +1,11 @@
 use std::collections::HashMap;
-
 use crate::token::token::Token;
+
+#[derive(Debug, Clone)]
+pub struct SwitchArm {
+    pub pattern: Expression,
+    pub body: Box<Statement>
+}
 
 #[derive(Debug, Clone)]
 pub enum StringSegment {
@@ -24,7 +29,8 @@ pub enum Statement {
     Struct { name: Box<Expression>, field:HashMap<String, Expression>},
     Import { path: String, line: usize, column: usize },
     Break { line: usize, column: usize },
-    Continue { line: usize, column: usize }
+    Continue { line: usize, column: usize },
+    Enum { name:String, variant:Vec<String>, line:usize, column:usize},
 }
 
 #[derive(Debug, Clone)]
@@ -121,5 +127,11 @@ pub enum Expression {
         body: Box<Statement>,
         line: usize,
         column: usize
+    },
+    Switch {
+        subject: Box<Expression>,
+        arms: Vec<SwitchArm>,
+        line: usize,
+        column: usize,
     }
 }

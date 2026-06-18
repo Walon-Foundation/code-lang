@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{ast::ast::{ElseIF, Expression, Statement, StringSegment}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
+use crate::{ast::ast::{ElseIF, Expression, Statement, StringSegment, SwitchArm}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
 use crate::ast::ast::Program;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
@@ -308,8 +308,52 @@ impl Parser {
                 }
             },          // FOR
             TokenType::While         => self.parse_while_expression(),        // WHILE
+            TokenType::Switch => self.parse_switch_expression(),
             _ => None,           // map-miss → noPrefixParseFnError
         }
+    }
+
+    fn parse_switch_expression(&mut self) -> Option<Expression> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+
+        // switch (subject) { arms }
+        if !self.expect_peak(TokenType::LParan) { return None; }
+        self.next_token(); // cur = subject expression start
+
+        let subject = self.parse_expression(Precedences::Lowest)?;
+
+        if !self.expect_peak(TokenType::RParen) { return None; }
+        if !self.expect_peak(TokenType::LBrace) { return None; }
+
+        let mut arms = Vec::new();
+
+        while !self.peak_token_is(&TokenType::RBrace) && !self.peak_token_is(&TokenType::EOF) {
+            self.next_token(); // cur = pattern expression start
+
+            let pattern = self.parse_expression(Precedences::Lowest)?;
+
+            if !self.expect_peak(TokenType::FatArrow) { return None; }
+
+            let body = if self.peak_token_is(&TokenType::LBrace) {
+                self.next_token(); // cur = '{'
+                self.parse_block_statement()?
+            } else {
+                self.next_token(); // cur = expression start
+                let body_line = self.cur_token.line;
+                let body_col  = self.cur_token.column;
+                let expr = self.parse_expression(Precedences::Lowest)?;
+                Statement::Expression { expr, line: body_line, column: body_col }
+            };
+
+            arms.push(SwitchArm { pattern, body: Box::new(body) });
+
+            if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+        }
+
+        if !self.expect_peak(TokenType::RBrace) { return None; }
+
+        Some(Expression::Switch { subject: Box::new(subject), arms, line, column })
     }
 
     fn parse_for_in_expression(&mut self) -> Option<Expression>{
@@ -668,8 +712,36 @@ impl Parser {
             TokenType::Break => self.parse_break_statement(),
             TokenType::Continue => self.parse_continue_statement(),
             TokenType::Const => self.parse_const_statement(),
+            TokenType::Enum => self.parse_enum_statement(),
             _                 => self.parse_expression_statement(),
         }
+    }
+
+    fn parse_enum_statement(&mut self) -> Option<Statement>{
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+        self.next_token();
+        let name = match self.cur_token.token_type.clone() {
+            TokenType::Ident(v) => v,
+            _ => return None
+        };
+
+        if !self.expect_peak(TokenType::LBrace){
+            return None;
+        };
+
+        let mut variants = Vec::new();
+        while !self.peak_token_is(&TokenType::RBrace){
+            let variant = match self.cur_token.token_type.clone() {
+                TokenType::Ident(v) => v,
+                _ => return None
+            };
+            variants.push(variant);
+
+            if self.peak_token_is(&TokenType::Comma) { self.next_token();}
+        }
+
+        Some(Statement::Enum { name, variant: variants, line, column })
     }
 
     fn parse_continue_statement(&mut self) -> Option<Statement> {

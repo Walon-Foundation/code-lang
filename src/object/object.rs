@@ -42,6 +42,14 @@ pub enum Object {
         body: Box<Statement>,
         env: Rc<RefCell<Environment>>,
     },
+    EnumType {
+        name:String,
+        variants: Vec<String>
+    },
+    EnumVariant {
+      enum_name:String,
+      variant:String
+    },
     Array(Vec<Object>),
     Hash(Vec<(Object, Object)>),
     Builtin(fn(Vec<Object>, CallInfo) -> Object),
@@ -76,6 +84,8 @@ impl Object {
             Object::Function { .. } => "FUNCTION",
             Object::Array(_) => "ARRAY",
             Object::Hash(_) => "HASH",
+            Object::EnumType { .. } => "ENUM_TYPE",
+            Object::EnumVariant { .. } => "ENUM_VARIANT"
         }
     }
 }
@@ -112,6 +122,8 @@ impl std::fmt::Display for Object {
                 let s: Vec<String> = pairs.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 write!(f, "{{{}}}", s.join(", "))
             },
+            Object::EnumType { name, variants } => write!(f, "{}({})", name, variants.join(" | ")),
+            Object::EnumVariant { enum_name, variant } => write!(f, "{}.{}", enum_name, variant),
         }
     }
 }

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::ast::{Expression, Program, Statement, StringSegment},
+    ast::ast::{Expression, Program, Statement, StringSegment, SwitchArm},
     lexer::lexer::Lexer,
     object::object::{CallInfo, Environment, Evaluable, Object::{self, Break}},
     parser::parser::Parser,
@@ -109,6 +109,12 @@ impl Evaluator {
                 };
                 let obj = Object::StructType { name: struct_name.clone(), default: defaults };
                 env.borrow_mut().set(struct_name, obj);
+                Object::Null
+            }
+
+            Statement::Enum { name, variant, .. } => {
+                let obj = Object::EnumType { name: name.clone(), variants: variant.clone() };
+                env.borrow_mut().set(name.to_string(), obj);
                 Object::Null
             }
 
@@ -371,6 +377,21 @@ impl Evaluator {
                 Object::Null
             }
 
+            Expression::Switch { subject, arms, .. } => {
+                let subject_val = self.eval_expression(subject, env);
+                if matches!(subject_val, Object::Error { .. }) { return subject_val; }
+
+                for arm in arms {
+                    let pat_val = self.eval_expression(&arm.pattern, env);
+                    if matches!(pat_val, Object::Error { .. }) { return pat_val; }
+                    if self.objects_equal(&subject_val, &pat_val) {
+                        return self.eval_statement(&arm.body, env);
+                    }
+                }
+
+                Object::Null
+            }
+
             Expression::Update { operator, target, prefix, line, column } => {
                 let current = self.eval_expression(target, env);
                 if matches!(current, Object::Error { .. }) { return current; }
@@ -446,6 +467,20 @@ impl Evaluator {
                 }
                 Object::StructInstance { type_name: name.clone(), fields: instance_fields }
             }
+        }
+    }
+
+    fn objects_equal(&self, a: &Object, b: &Object) -> bool {
+        match (a, b) {
+            (Object::Integer(x),    Object::Integer(y))    => x == y,
+            (Object::Float(x),      Object::Float(y))      => x == y,
+            (Object::StringType(x), Object::StringType(y)) => x == y,
+            (Object::Bool(x),       Object::Bool(y))       => x == y,
+            (Object::Char(x),       Object::Char(y))       => x == y,
+            (Object::Null,          Object::Null)           => true,
+            (Object::EnumVariant { enum_name: n1, variant: v1 },
+             Object::EnumVariant { enum_name: n2, variant: v2 }) => n1 == n2 && v1 == v2,
+            _ => false,
         }
     }
 
@@ -630,7 +665,7 @@ impl Evaluator {
                         let key = Object::StringType(prop.clone());
                         let mut found = false;
                         for (k, v) in pairs.iter_mut() {
-                            if self.objects_eq(k, &key) { *v = final_val.clone(); found = true; break; }
+                            if self.objects_equal(k, &key) { *v = final_val.clone(); found = true; break; }
                         }
                         if !found { pairs.push((key, final_val.clone())); }
                     }
@@ -675,7 +710,7 @@ impl Evaluator {
                     Object::Hash(pairs) => {
                         let mut found = false;
                         for (k, v) in pairs.iter_mut() {
-                            if self.objects_eq(k, &idx) { *v = final_val.clone(); found = true; break; }
+                            if self.objects_equal(k, &idx) { *v = final_val.clone(); found = true; break; }
                         }
                         if !found { pairs.push((idx, final_val.clone())); }
                     }
@@ -700,7 +735,7 @@ impl Evaluator {
             }
             (Object::Hash(pairs), _) => {
                 for (k, v) in pairs {
-                    if self.objects_eq(k, &index) { return v.clone(); }
+                    if self.objects_equal(k, &index) { return v.clone(); }
                 }
                 Object::Error { message: format!("key {} not found in hash", index), line, column }
             }
@@ -732,9 +767,16 @@ impl Evaluator {
             Object::Hash(pairs) => {
                 let key = Object::StringType(prop.to_string());
                 for (k, v) in pairs {
-                    if self.objects_eq(k, &key) { return v.clone(); }
+                    if self.objects_equal(k, &key) { return v.clone(); }
                 }
                 Object::Error { message: format!("property not found: {}", prop), line, column }
+            },
+            Object::EnumType { name, variants } => {
+                if variants.contains(&prop.to_string()) {
+                    Object::EnumVariant { enum_name: name.clone(), variant: prop.to_string() }
+                } else {
+                    Object::Error { message: format!("{} has no variant '{}'", name, prop), line, column }
+                }
             }
             _ => Object::Error { message: format!("cannot access property {} on {}", prop, obj.type_name()), line, column },
         }
@@ -797,15 +839,6 @@ impl Evaluator {
         matches!(tt, TokenType::Asign | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign | TokenType::QuoAssign | TokenType::RemAssign)
     }
 
-    fn objects_eq(&self, a: &Object, b: &Object) -> bool {
-        match (a, b) {
-            (Object::Integer(x), Object::Integer(y)) => x == y,
-            (Object::Bool(x), Object::Bool(y)) => x == y,
-            (Object::StringType(x), Object::StringType(y)) => x == y,
-            (Object::Char(x), Object::Char(y)) => x == y,
-            _ => false,
-        }
-    }
 
     fn op_str(&self, tt: &TokenType) -> &str {
         match tt {

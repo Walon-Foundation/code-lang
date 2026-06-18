@@ -24,6 +24,8 @@ pub enum TokenType {
     Import,
     Struct,
     In,
+    Switch,
+    Enum,
     Continue,
     Ident(String),
 
@@ -69,6 +71,9 @@ pub enum TokenType {
     LessThanEqual,
     EQ,
     NOTEQ,
+
+    //for match
+    FatArrow,
 
     //Delimitters
     Comma,
@@ -119,6 +124,8 @@ pub fn lookup_ident(ident: &str) -> TokenType {
         "import"   => TokenType::Import,
         "struct"   => TokenType::Struct,
         "const"    => TokenType::Const,
+        "switch"   => TokenType::Switch,
+        "enum"     => TokenType::Enum,
         _          => TokenType::Ident(ident.to_string()),
     }
 }

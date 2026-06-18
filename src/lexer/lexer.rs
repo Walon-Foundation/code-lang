@@ -180,6 +180,9 @@ impl Lexer {
                 if self.peak_char() == '=' {
                     self.read_char();
                     token = Token { token_type: TokenType::EQ, line: current_line, column: current_column };
+                }else if self.peak_char() == '>' {
+                    self.read_char();
+                    token = Token { token_type: TokenType::FatArrow, line: current_line, column: current_column }
                 } else {
                     token = new_token(TokenType::Asign, current_line, current_column);
                 }

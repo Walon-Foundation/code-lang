@@ -55,7 +55,7 @@ PI  = 3;       # error: cannot reassign constant`}</Pre>
         <tbody>
           <tr><td>Integer</td><td><code>42</code>, <code>-7</code></td><td>64-bit signed</td></tr>
           <tr><td>Float</td><td><code>3.14</code>, <code>-0.5</code></td><td>64-bit IEEE 754</td></tr>
-          <tr><td>String</td><td><code>"hello"</code>, <code>"hi ${name}"</code></td><td>UTF-8, double-quoted; supports interpolation</td></tr>
+          <tr><td>String</td><td><code>"hello"</code>, <code>{'"hi ${name}"'}</code></td><td>UTF-8, double-quoted; supports interpolation</td></tr>
           <tr><td>Char</td><td><code>'a'</code></td><td>Single character, single-quoted</td></tr>
           <tr><td>Boolean</td><td><code>true</code>, <code>false</code></td><td></td></tr>
           <tr><td>Null</td><td><code>null</code></td><td>Absence of value</td></tr>

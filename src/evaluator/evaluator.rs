@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    ast::ast::{Expression, Program, Statement, StringSegment, SwitchArm},
+    ast::ast::{Expression, LetPattern, Program, Statement, StringSegment, SwitchArm},
     lexer::lexer::Lexer,
     object::object::{CallInfo, Environment, Evaluable, Object::{self, Break}},
     parser::parser::Parser,
@@ -77,24 +77,107 @@ impl Evaluator {
             
                 // extract the name from the inner statement and mark it as pubed
                 let name = match statement.as_ref() {
-                    Statement::Let   { name, .. } => name.clone(),
-                    Statement::Const { name, .. } => name.clone(),
+                    Statement::Let   { pattern, .. } => {
+                        match pattern {
+                            LetPattern::Ident(v) => v,
+                            _ => return result
+                        }
+                    },
+                    Statement::Const { pattern, .. } => {
+                        match pattern {
+                            LetPattern::Ident(v) => v,
+                            _ => return result
+                        }
+                    },
                     _ => return result,
                 };
                 env.borrow_mut().mark_pub(&name);
                 Object::Null
             }
 
-            Statement::Let { name, value, .. } => {
+            Statement::Let { pattern, value, line, column } => {
                 let val = self.eval_expression(value, env);
                 // errors are stored as values so callers can use is_error()
-                env.borrow_mut().set(name.clone(), val);
+                match pattern {
+                    LetPattern::Ident(n) => {
+                        env.borrow_mut().set(n.to_string(), val);
+                    }
+
+                    LetPattern::Array(names) =>  {
+                        let elems = match val {
+                            Object::Array(e) => e,
+                            _ => return Object::Error { message: format!("array destructing requires an array"), line:*line, column:*column}
+                        };
+
+                        for(i, name) in names.iter().enumerate() {
+                            if name == "_" { continue }
+                            let v = elems.get(i).cloned().unwrap_or(Object::Null);
+                            env.borrow_mut().set(name.to_string(), v);
+                        }
+                    }
+
+                    LetPattern::Hash(pairs) => {
+                        for (key, alias) in pairs {
+                            let v = match &val {
+                                Object::Hash(kv) => {
+                                    kv.iter()
+                                        .find(|(k, _)| matches!(k, Object::StringType(s) if s == key))
+                                        .map(|(_, v)| v.clone())
+                                        .unwrap_or(Object::Null)
+                                }
+                                Object::StructInstance { fields, .. } => {
+                                    fields.get(key).cloned().unwrap_or(Object::Null)
+                                }
+                                _ => return Object::Error { message: format!("hash destructing required a hash or struct"), line: *line, column: *column }
+                            };
+                            env.borrow_mut().set(alias.to_string(), v)
+                        }
+                    }
+                }
+
                 Object::Null
             }
 
-            Statement::Const { name, value, .. } => {
+            Statement::Const { pattern, value, line, column } => {
                 let val = self.eval_expression(value, env);
-                env.borrow_mut().set_const(name.clone(), val);
+                // errors are stored as values so callers can use is_error()
+                match pattern {
+                    LetPattern::Ident(n) => {
+                        env.borrow_mut().set_const(n.to_string(), val);
+                    }
+
+                    LetPattern::Array(names) =>  {
+                        let elems = match val {
+                            Object::Array(e) => e,
+                            _ => return Object::Error { message: format!("array destructing requires an array"), line:*line, column:*column}
+                        };
+
+                        for(i, name) in names.iter().enumerate() {
+                            if name == "_" { continue }
+                            let v = elems.get(i).cloned().unwrap_or(Object::Null);
+                            env.borrow_mut().set_const(name.to_string(), v);
+                        }
+                    }
+
+                    LetPattern::Hash(pairs) => {
+                        for (key, alias) in pairs {
+                            let v = match &val {
+                                Object::Hash(kv) => {
+                                    kv.iter()
+                                        .find(|(k, _)| matches!(k, Object::StringType(s) if s == key))
+                                        .map(|(_, v)| v.clone())
+                                        .unwrap_or(Object::Null)
+                                }
+                                Object::StructInstance { fields, .. } => {
+                                    fields.get(key).cloned().unwrap_or(Object::Null)
+                                }
+                                _ => return Object::Error { message: format!("hash destructing required a hash or struct"), line: *line, column: *column }
+                            };
+                            env.borrow_mut().set_const(alias.to_string(), v)
+                        }
+                    }
+                }
+
                 Object::Null
             }
 
@@ -171,6 +254,21 @@ impl Evaluator {
 
                 Object::StringType(result)
             },
+            Expression::Null { .. } => Object::Null,
+
+            Expression::NullCoalesce { left, right, .. } => {
+                let l = self.eval_expression(left, env);
+                if matches!(l, Object::Null){
+                    self.eval_expression(right, env)
+                }else {
+                    l
+                }
+            },
+            Expression::Typeof { value, ..} => {
+                let object = self.eval_expression(value, env);
+                Object::StringType(object.type_name().to_lowercase())
+            },
+            
             Expression::Char { value, .. } => Object::Char(*value),
             Expression::Boolean { value, .. } => Object::Bool(*value),
 
@@ -238,6 +336,38 @@ impl Evaluator {
             }
 
             Expression::Call { function, argument, line, column } => {
+                //call for the struct method 
+                if let Expression::Member { object, property, .. } = function.as_ref() {
+                    let reciever = self.eval_expression(object, env);
+                    if matches!(reciever, Object::Error { .. }) { return reciever}
+
+                    let prop_name = match property.as_ref() {
+                        Expression::Ident { value, ..} => value.clone(),
+                        _ => return Object::Error { message: "invalid member expression".to_string(), line: *line, column: *column },
+                    };
+
+                    let method = self.eval_member_on_obj(&reciever, &prop_name, *line, *column);
+                    if matches!(method, Object::Error { .. }) { return method }
+
+                    if let Object::Function { parameters, ..} = method.clone() {
+                        if parameters.first().map(|p| p.name == "self").unwrap_or(false){
+                            let mut args = self.eval_args(argument, env);
+                            if args.first().map(|a| matches!(a, Object::Error { .. })).unwrap_or(false) {
+                                return args.into_iter().next().unwrap();
+                            }
+                            args.insert(0, reciever);
+                            return self.apply_function(method.clone(), args, *line, *column);
+                        }
+                    }
+
+                    //not a self-method
+                    let args = self.eval_args(argument, env);
+                    if args.first().map(|a| matches!(a, Object::Error { .. })).unwrap_or(false) {
+                        return args.into_iter().next().unwrap();
+                    }
+                    return self.apply_function(method, args, *line, *column);
+                }
+                
                 let func = self.eval_expression(function, env);
                 if matches!(func, Object::Error { .. }) { return func; }
                 let args = self.eval_args(argument, env);
@@ -435,8 +565,10 @@ impl Evaluator {
                                 match &mut obj {
                                     Object::Array(elements) => {
                                         if let Object::Integer(i) = &idx {
-                                            let i = *i as usize;
-                                            if i < elements.len() { elements[i] = updated.clone(); }
+                                            if *i < 0 || *i as usize >= elements.len() {
+                                                return Object::Error { message: format!("index {} out of range (len {})", i, elements.len()), line: *line, column: *column };
+                                            }
+                                            elements[*i as usize] = updated.clone();
                                         }
                                     }
                                     _ => {}
@@ -637,7 +769,7 @@ impl Evaluator {
 
         match left {
             Expression::Ident { value: name, .. } => {
-                let final_val = if op.token_type == TokenType::Asign {
+                let final_val = if op.token_type == TokenType::Assign {
                     val
                 } else {
                     let current = match env.borrow().get(name) {
@@ -666,7 +798,7 @@ impl Evaluator {
                     Some(o) => o,
                     None => return Object::Error { message: format!("identifier not found: {}", root), line, column },
                 };
-                let final_val = if op.token_type == TokenType::Asign {
+                let final_val = if op.token_type == TokenType::Assign {
                     val
                 } else {
                     let current = self.eval_member_on_obj(&container, &prop, line, column);
@@ -702,7 +834,7 @@ impl Evaluator {
                 };
                 let idx = self.eval_expression(idx_expr, env);
                 if matches!(idx, Object::Error { .. }) { return idx; }
-                let final_val = if op.token_type == TokenType::Asign {
+                let final_val = if op.token_type == TokenType::Assign {
                     val
                 } else {
                     let current = self.eval_index(container.clone(), idx.clone(), line, column);
@@ -817,24 +949,46 @@ impl Evaluator {
     pub fn apply_function(&mut self, func: Object, args: Vec<Object>, line: usize, column: usize) -> Object {
         match func {
             Object::Function { parameters, body, env: func_env } => {
-                if args.len() != parameters.len() {
-                    return Object::Error {
-                        message: format!("wrong number of arguments: expected {}, got {}", parameters.len(), args.len()),
-                        line, column,
-                    };
-                }
                 if self.call_depth >= MAX_CALL_DEPTH {
                     return Object::Error {
                         message: format!("maximum call depth exceeded ({})", MAX_CALL_DEPTH),
                         line, column,
                     };
                 }
-                let extended = Environment::new_enclosed(Rc::clone(&func_env));
-                for (param, arg) in parameters.iter().zip(args.iter()) {
-                    if let Expression::Ident { value, .. } = param {
-                        extended.borrow_mut().set(value.clone(), arg.clone());
-                    }
+
+                // for self-methods, self is prepended to args — don't count it in user-facing messages
+                let is_self_method = parameters.first().map(|p| p.name == "self").unwrap_or(false);
+                let user_params = if is_self_method { parameters.len().saturating_sub(1) } else { parameters.len() };
+                let user_args  = if is_self_method { args.len().saturating_sub(1) } else { args.len() };
+                let required_total = parameters.iter().filter(|p| p.default.is_none()).count();
+                let required_user  = if is_self_method { required_total.saturating_sub(1) } else { required_total };
+
+                if args.len() > parameters.len() {
+                    return Object::Error {
+                        message: format!("wrong number of arguments: expected {}, got {}", user_params, user_args),
+                        line, column,
+                    };
                 }
+
+                if args.len() < required_total {
+                    return Object::Error {
+                        message: format!("missing arguments: expected at least {}, got {}", required_user, user_args),
+                        line, column,
+                    };
+                }
+
+                let extended = Environment::new_enclosed(Rc::clone(&func_env));
+                for (i, param) in parameters.iter().enumerate() {
+                    let val = if i < args.len(){
+                        args[i].clone()
+                    }else {
+                        self.eval_expression(param.default.as_ref().unwrap(), &extended)
+                    };
+
+                    extended.borrow_mut().set(param.name.clone(), val)
+                }
+
+                
                 self.call_depth += 1;
                 let result = self.eval_statement(&body, &extended);
                 self.call_depth -= 1;
@@ -871,7 +1025,7 @@ impl Evaluator {
     }
 
     fn is_assignment(&self, tt: &TokenType) -> bool {
-        matches!(tt, TokenType::Asign | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign | TokenType::QuoAssign | TokenType::RemAssign)
+        matches!(tt, TokenType::Assign | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign | TokenType::QuoAssign | TokenType::RemAssign)
     }
 
 
@@ -892,7 +1046,7 @@ impl Evaluator {
             TokenType::GreaterThanEqual => ">=",
             TokenType::And => "&&",
             TokenType::Or => "||",
-            TokenType::Asign => "=",
+            TokenType::Assign => "=",
             TokenType::AddAssign => "+=",
             TokenType::SubAssign => "-=",
             TokenType::MulAssign => "*=",
@@ -926,7 +1080,10 @@ impl Evaluator {
         }
 
         let module_env = Environment::new_enclosed(Rc::clone(env));
-        self.eval(&program, &module_env);
+        let eval_result = self.eval(&program, &module_env);
+        if matches!(eval_result, Object::Error { .. }) {
+            return eval_result;
+        }
 
         let env_ref = module_env.borrow();
         let pub_gated = !env_ref.pubs.is_empty();

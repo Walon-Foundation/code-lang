@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
 
-use crate::ast::ast::{Expression, Statement};
+use crate::ast::ast::{Expression, Param, Statement};
 
 #[derive(Debug, Clone, Copy)]
 pub struct CallInfo {
@@ -38,7 +38,7 @@ pub enum Object {
     },
     Module { name: String, pub_gated: bool, members: HashMap<String, Object> },
     Function {
-        parameters: Vec<Expression>,
+        parameters: Vec<Param>,
         body: Box<Statement>,
         env: Rc<RefCell<Environment>>,
     },

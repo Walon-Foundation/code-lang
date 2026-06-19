@@ -1,0 +1,23 @@
+[language]
+name = "code-lang"
+grammar = "code-lang"
+path_suffixes = ["cl"]
+line_comment = "# "
+block_comment = ["/* ", " */"]
+autoclose_before = ";:.,=}])>"
+
+[[language.brackets]]
+start = "{"
+end = "}"
+
+[[language.brackets]]
+start = "["
+end = "]"
+
+[[language.brackets]]
+start = "("
+end = ")"
+
+[[language.brackets]]
+start = "\""
+end = "\""

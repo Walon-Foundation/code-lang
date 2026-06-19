@@ -1,0 +1,12 @@
+[package]
+name = "code-lang-lsp"
+version = "0.2.2"
+edition = "2024"
+description = "LSP server for code-lang"
+
+[[bin]]
+name = "code-lang-lsp"
+path = "src/main.rs"
+
+[dependencies]
+code-lang = { path = "../..", version = "0.2.2" }

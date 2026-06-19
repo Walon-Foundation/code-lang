@@ -208,6 +208,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "code-lang-fmt"
+version = "0.2.2"
+dependencies = [
+ "clap",
+ "code-lang",
+]
+
+[[package]]
+name = "code-lang-lsp"
+version = "0.2.2"
+dependencies = [
+ "code-lang",
+]
+
+[[package]]
 name = "colorchoice"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -803,7 +818,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

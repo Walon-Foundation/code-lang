@@ -1,0 +1,150 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "code-lang",
+  "scopeName": "source.cl",
+  "fileTypes": ["cl"],
+  "patterns": [
+    { "include": "#block-comment" },
+    { "include": "#line-comment" },
+    { "include": "#string" },
+    { "include": "#char" },
+    { "include": "#number" },
+    { "include": "#keyword-control" },
+    { "include": "#keyword-decl" },
+    { "include": "#keyword-operator" },
+    { "include": "#constant" },
+    { "include": "#stdlib-module" },
+    { "include": "#builtin-fn" },
+    { "include": "#function-call" },
+    { "include": "#operator" }
+  ],
+  "repository": {
+    "block-comment": {
+      "name": "comment.block.cl",
+      "begin": "/\\*",
+      "end": "\\*/",
+      "captures": {
+        "0": { "name": "punctuation.definition.comment.cl" }
+      }
+    },
+    "line-comment": {
+      "name": "comment.line.number-sign.cl",
+      "match": "#.*$",
+      "captures": {
+        "0": { "name": "comment.line.number-sign.cl" }
+      }
+    },
+    "string": {
+      "name": "string.quoted.double.cl",
+      "begin": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.cl" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.cl" }
+      },
+      "patterns": [
+        {
+          "name": "meta.interpolation.cl",
+          "begin": "\\$\\{",
+          "beginCaptures": {
+            "0": { "name": "punctuation.section.interpolation.begin.cl" }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": { "name": "punctuation.section.interpolation.end.cl" }
+          },
+          "patterns": [{ "include": "$self" }]
+        },
+        {
+          "name": "constant.character.escape.cl",
+          "match": "\\\\[nrt\"'\\\\]"
+        }
+      ]
+    },
+    "char": {
+      "name": "string.quoted.single.cl",
+      "match": "'(?:[^'\\\\]|\\\\.)'",
+      "captures": {
+        "0": { "name": "string.quoted.single.cl" }
+      }
+    },
+    "number": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.cl",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.cl",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "keyword-control": {
+      "name": "keyword.control.cl",
+      "match": "\\b(if|else|elseif|while|for|in|break|continue|return|switch)\\b"
+    },
+    "keyword-decl": {
+      "name": "keyword.declaration.cl",
+      "match": "\\b(let|const|fn|struct|enum|import|pub)\\b"
+    },
+    "keyword-operator": {
+      "name": "keyword.operator.word.cl",
+      "match": "\\b(typeof)\\b"
+    },
+    "constant": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.cl",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.cl",
+          "match": "\\bnull\\b"
+        }
+      ]
+    },
+    "stdlib-module": {
+      "name": "support.class.stdlib.cl",
+      "match": "\\b(fmt|math|strings|arrays|hash|fs|path|os|time|json|rand|http)(?=\\.)"
+    },
+    "builtin-fn": {
+      "name": "support.function.builtin.cl",
+      "match": "\\b(is_error)\\b"
+    },
+    "function-call": {
+      "name": "entity.name.function.cl",
+      "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\\s*\\()"
+    },
+    "operator": {
+      "patterns": [
+        {
+          "name": "keyword.operator.null-coalescing.cl",
+          "match": "\\?\\?"
+        },
+        {
+          "name": "keyword.operator.arithmetic.cl",
+          "match": "(\\*\\*|//|[+\\-*/%])"
+        },
+        {
+          "name": "keyword.operator.assignment.cl",
+          "match": "(\\+=|-=|\\*=|/=|%=|=)"
+        },
+        {
+          "name": "keyword.operator.comparison.cl",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.cl",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.increment.cl",
+          "match": "(\\+\\+|--)"
+        }
+      ]
+    }
+  }
+}

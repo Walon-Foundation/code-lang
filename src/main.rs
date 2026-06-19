@@ -1,15 +1,6 @@
-mod token;
-mod lexer;
-mod repl;
-mod parser;
-mod ast;
-mod object;
-mod evaluator;
-mod std_lib;
-
-use std::{ fs, path::{Path, PathBuf}};
+use std::{fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};
-use repl::repl::{execute, run_repl};
+use code_lang::repl::repl::{execute, run_repl};
 use clap::Parser;
 
 #[derive(Parser)]
@@ -29,7 +20,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn run_file(path: &Path) -> Result<()>  {
+fn run_file(path: &Path) -> Result<()> {
     let ext_ok = path.extension()
         .and_then(|e| e.to_str())
         .map(|e| e.eq_ignore_ascii_case("cl"))
@@ -40,8 +31,6 @@ fn run_file(path: &Path) -> Result<()>  {
     }
 
     let file = fs::read_to_string(path)?;
-
     execute(file);
-
     Ok(())
 }

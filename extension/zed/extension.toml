@@ -1,0 +1,19 @@
+[extension]
+id = "code-lang"
+name = "code-lang"
+version = "0.1.0"
+description = "code-lang (.cl) language support for Zed"
+authors = ["Walon-Foundation"]
+repository = "https://github.com/Walon-Foundation/code-lang"
+
+[lib]
+kind = "language_server"
+
+[[language_servers]]
+name = "code-lang-lsp"
+language = "code-lang"
+
+[[grammars]]
+name = "code-lang"
+repository = "https://github.com/Walon-Foundation/tree-sitter-code-lang"
+commit = ""

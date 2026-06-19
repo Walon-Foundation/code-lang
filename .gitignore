@@ -16,4 +16,4 @@ dist/
 # docs (Next.js)
 docs/.next/
 docs/node_modules/
-docs/.env*.local
+docs/.env*.local.claude/

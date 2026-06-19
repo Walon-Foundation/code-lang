@@ -1,0 +1,69 @@
+{
+  "name": "code-lang",
+  "displayName": "code-lang",
+  "description": "Language support for code-lang (.cl files) — syntax highlighting, bracket matching, and LSP integration",
+  "version": "0.1.0",
+  "publisher": "Walon-Foundation",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Walon-Foundation/code-lang"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "code-lang",
+        "aliases": ["code-lang", "cl"],
+        "extensions": [".cl"],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/cl-light.svg",
+          "dark": "./icons/cl-dark.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "code-lang",
+        "scopeName": "source.cl",
+        "path": "./syntaxes/code-lang.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "code-lang",
+      "properties": {
+        "code-lang.lsp.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the code-lang language server for diagnostics and completions."
+        },
+        "code-lang.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the code-lang-lsp binary. Defaults to ~/.code-lang/bin/code-lang-lsp."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.0.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

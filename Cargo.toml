@@ -1,5 +1,5 @@
 [workspace]
-members = ["."]
+members = [".", "crates/lsp", "crates/fmt"]
 
 [workspace.metadata.dist]
 cargo-dist-version = "0.22.1"

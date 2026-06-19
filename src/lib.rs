@@ -6,3 +6,4 @@ pub mod parser;
 pub mod repl;
 pub mod std_lib;
 pub mod token;
+pub mod analysis;

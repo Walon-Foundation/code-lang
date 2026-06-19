@@ -184,7 +184,7 @@ impl Lexer {
                     self.read_char();
                     token = Token { token_type: TokenType::FatArrow, line: current_line, column: current_column }
                 } else {
-                    token = new_token(TokenType::Asign, current_line, current_column);
+                    token = new_token(TokenType::Assign, current_line, current_column);
                 }
             },
 
@@ -339,6 +339,15 @@ impl Lexer {
                 token.column = current_column;
             }
 
+            '?' => {
+                if self.peak_char() == '?' {
+                    self.read_char();
+                    token = Token { token_type: TokenType::NullCoalesce, line: current_line, column: current_column };
+                } else {
+                    token = new_token(TokenType::ILLEGAL, current_line, current_column);
+                }
+            }
+
             _ => {
                 if is_letter(self.ch) {
                     let ident = self.read_identifier();
@@ -349,9 +358,13 @@ impl Lexer {
                 } else if is_digit(self.ch) {
                     let value = self.read_number();
                     if value.contains('.') {
-                        token.token_type = TokenType::Float(value.parse::<f64>().unwrap());
+                        token.token_type = value.parse::<f64>()
+                            .map(TokenType::Float)
+                            .unwrap_or(TokenType::ILLEGAL);
                     } else {
-                        token.token_type = TokenType::Int(value.parse::<isize>().unwrap());
+                        token.token_type = value.parse::<isize>()
+                            .map(TokenType::Int)
+                            .unwrap_or(TokenType::ILLEGAL);
                     }
                     token.line = current_line;
                     token.column = current_column;
@@ -473,7 +486,7 @@ mod test {
     fn test_assign_and_bang() {
         assert_eq!(
             tokenize("= !"),
-            vec![TokenType::Asign, TokenType::Bang, TokenType::EOF]
+            vec![TokenType::Assign, TokenType::Bang, TokenType::EOF]
         );
     }
 
@@ -586,7 +599,7 @@ mod test {
             vec![
                 TokenType::Let,
                 TokenType::Ident("x".to_string()),
-                TokenType::Asign,
+                TokenType::Assign,
                 TokenType::Int(10),
                 TokenType::Plus,
                 TokenType::Int(2),

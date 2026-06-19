@@ -29,6 +29,10 @@ pub enum TokenType {
     Continue,
     Ident(String),
     Pub,
+    Typeof,
+    Null,
+
+    NullCoalesce,
 
     //Identifiers
     Int(isize),
@@ -43,7 +47,7 @@ pub enum TokenType {
     Char(char),
 
     //operators
-    Asign,
+    Assign,
     Minus,
     Plus,
     Bang,
@@ -128,6 +132,8 @@ pub fn lookup_ident(ident: &str) -> TokenType {
         "switch"   => TokenType::Switch,
         "enum"     => TokenType::Enum,
         "pub"      => TokenType::Pub,
+        "typeof"   => TokenType::Typeof,
+        "null"     => TokenType::Null,
         _          => TokenType::Ident(ident.to_string()),
     }
 }

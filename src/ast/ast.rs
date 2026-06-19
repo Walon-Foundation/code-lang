@@ -18,11 +18,24 @@ pub struct Program {
     pub statements: Vec<Statement>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Param {
+    pub name: String,
+    pub default: Option<Box<Expression>>
+}
+
+#[derive(Debug, Clone)]
+pub enum LetPattern {
+    Ident(String),
+    Array(Vec<String>),
+    Hash(Vec<(String, String)>)
+}
+
 // What Go split across Node + Statement interfaces becomes one enum.
 #[derive(Debug, Clone,)]
 pub enum Statement {
-    Let { name: String, value: Expression, line: usize, column: usize },
-    Const {name: String, value: Expression, line:usize, column:usize},
+    Let { pattern: LetPattern, value: Expression, line: usize, column: usize },
+    Const {pattern: LetPattern, value: Expression, line:usize, column:usize},
     Return { value: Expression, line: usize, column: usize },
     Expression { expr: Expression, line: usize, column: usize },
     Block { statements: Vec<Statement>, line: usize, column: usize },
@@ -106,7 +119,7 @@ pub enum Expression {
         column: usize 
     },
     Function {
-        parameter: Vec<Expression>,
+        parameter: Vec<Param>,
         body: Box<Statement>,
         line: usize,
         column: usize  
@@ -134,5 +147,17 @@ pub enum Expression {
         arms: Vec<SwitchArm>,
         line: usize,
         column: usize,
-    }
+    },
+    Typeof {
+        value: Box<Expression>,
+        line: usize,
+        column: usize,
+    },
+    NullCoalesce {
+        left: Box<Expression>,
+        right: Box<Expression>,
+        line: usize,
+        column: usize
+    },
+    Null { line: usize, column: usize },
 }

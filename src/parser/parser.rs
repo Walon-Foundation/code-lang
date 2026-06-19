@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use crate::{ast::ast::{ElseIF, Expression, Statement, StringSegment, SwitchArm}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
+use crate::{ast::ast::{ElseIF, Expression, LetPattern, Statement, StringSegment, SwitchArm}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
 use crate::ast::ast::Program;
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedences {
     Lowest,
     Assign,
+    NullCoalesce,
     Or,
     And,
     Equals,
@@ -46,10 +47,11 @@ impl Parser {
             TokenType::SLASH | TokenType::Asterisk | TokenType::Rem => Precedences::Product,
             TokenType::And => Precedences::And,
             TokenType::Or => Precedences::Or,
+            TokenType::NullCoalesce => Precedences::NullCoalesce,
             TokenType::LParan => Precedences::Call,
             TokenType::LBracket => Precedences::Index,
             TokenType::Dot => Precedences::Member,
-            TokenType::Asign => Precedences::Assign,
+            TokenType::Assign => Precedences::Assign,
             _ => Precedences::Lowest,
         }
     }
@@ -86,28 +88,53 @@ impl Parser {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        if !self.expect_peak_ident() {
-            return None;
-        }
-
-        let name = match &self.cur_token.token_type {
-            TokenType::Ident(value) => value.clone(),
-            _ => return None
+        let pattern = if self.peak_token_is(&TokenType::LBracket) {
+            self.next_token();
+            let mut names = Vec::new();
+            while !self.peak_token_is(&TokenType::RBracket) {
+                self.next_token();
+                let name = match self.cur_token.token_type.clone() {
+                    TokenType::Ident(v) => v,
+                    _ => return None,
+                };
+                names.push(name);
+                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            }
+            if !self.expect_peak(TokenType::RBracket) { return None; }
+            LetPattern::Array(names)
+        } else if self.peak_token_is(&TokenType::LBrace) {
+            self.next_token();
+            let mut pairs = Vec::new();
+            while !self.peak_token_is(&TokenType::RBrace) {
+                self.next_token();
+                let key = match self.cur_token.token_type.clone() {
+                    TokenType::Ident(v) => v,
+                    _ => return None,
+                };
+                let alias = if self.peak_token_is(&TokenType::Colon) {
+                    self.next_token(); self.next_token();
+                    match self.cur_token.token_type.clone() { TokenType::Ident(v) => v, _ => return None }
+                } else { key.clone() };
+                pairs.push((key, alias));
+                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            }
+            if !self.expect_peak(TokenType::RBrace) { return None; }
+            LetPattern::Hash(pairs)
+        } else {
+            if !self.expect_peak_ident() { return None; }
+            let name = match &self.cur_token.token_type {
+                TokenType::Ident(value) => value.clone(),
+                _ => return None,
+            };
+            LetPattern::Ident(name)
         };
 
-        if !self.expect_peak(TokenType::Asign){
-            return None
-        }
-
+        if !self.expect_peak(TokenType::Assign) { return None; }
         self.next_token();
-
         let value = self.parse_expression(Precedences::Lowest)?;
+        if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
 
-        if !self.expect_peak(TokenType::Semicolon){
-            return None
-        }
-
-        Some(Statement::Const { name, value, line, column })
+        Some(Statement::Const { pattern, value, line, column })
     }
 
     fn parse_integer_literal(&self) -> Option<Expression>{
@@ -316,6 +343,12 @@ impl Parser {
             },          // FOR
             TokenType::While         => self.parse_while_expression(),        // WHILE
             TokenType::Switch => self.parse_switch_expression(),
+            TokenType::Typeof => self.parse_typeof_expression(),
+            TokenType::Null => {
+                let line = self.cur_token.line;
+                let column = self.cur_token.column;
+                Some(Expression::Null { line, column })
+            },
             _ => None,           // map-miss → noPrefixParseFnError
         }
     }
@@ -458,7 +491,8 @@ impl Parser {
             line, column })
     }
 
-    fn parse_function_parameter(&mut self) -> Option<Vec<Expression>> {
+    fn parse_function_parameter(&mut self) -> Option<Vec<crate::ast::ast::Param>> {
+        use crate::ast::ast::Param;
         let mut list = Vec::new();
 
         if !self.expect_peak(TokenType::LParan) {
@@ -471,24 +505,28 @@ impl Parser {
         }
 
         self.next_token();
-        let line = self.cur_token.line;
-        let column = self.cur_token.column;
-        let value = match self.cur_token.token_type.clone() {
+        let name = match self.cur_token.token_type.clone() {
             TokenType::Ident(v) => v,
             _ => return None,
         };
-        list.push(Expression::Ident { value, line, column });
+        let default = if self.peak_token_is(&TokenType::Assign) {
+            self.next_token(); self.next_token();
+            Some(Box::new(self.parse_expression(Precedences::Lowest)?))
+        } else { None };
+        list.push(Param { name, default });
 
         while self.peak_token_is(&TokenType::Comma) {
             self.next_token();
             self.next_token();
-            let line = self.cur_token.line;
-            let column = self.cur_token.column;
-            let value = match self.cur_token.token_type.clone() {
+            let name = match self.cur_token.token_type.clone() {
                 TokenType::Ident(v) => v,
                 _ => return None,
             };
-            list.push(Expression::Ident { value, line, column });
+            let default = if self.peak_token_is(&TokenType::Assign) {
+                self.next_token(); self.next_token();
+                Some(Box::new(self.parse_expression(Precedences::Lowest)?))
+            } else { None };
+            list.push(Param { name, default });
         }
 
         if !self.expect_peak(TokenType::RParen) {
@@ -496,6 +534,22 @@ impl Parser {
         }
 
         Some(list)
+    }
+
+    fn parse_typeof_expression(&mut self) -> Option<Expression> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+        self.next_token();
+        let value = self.parse_expression(Precedences::Lowest)?;
+        Some(Expression::Typeof { value: Box::new(value), line, column })
+    }
+
+    fn parse_null_coalesce_expression(&mut self, left: Expression) -> Option<Expression> {
+        let line = self.cur_token.line;
+        let column = self.cur_token.column;
+        self.next_token();
+        let right = self.parse_expression(Precedences::NullCoalesce)?;
+        Some(Expression::NullCoalesce { left: Box::new(left), right: Box::new(right), line, column })
     }
 
     fn parse_char_literal(&self) -> Option<Expression>{
@@ -631,7 +685,7 @@ impl Parser {
             | TokenType::LT | TokenType::GT                                               // LT GT
             | TokenType::GreaterThanEqual | TokenType::LessThanEqual                      // GREATER_THAN_EQUAL LESS_THAN_EQUAL
             | TokenType::And | TokenType::Or                                             // AND OR
-            | TokenType::Asign                                                           // ASSIGN
+            | TokenType::Assign                                                           // ASSIGN
             | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign          // ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN
             | TokenType::QuoAssign | TokenType::RemAssign                                 // QUO_ASSIGN REM_ASSIGN
                 => self.parse_infix_expression(left),
@@ -640,7 +694,8 @@ impl Parser {
             TokenType::LBracket => self.parse_index_expression(left),         // LBRACKET → index
             TokenType::Dot      => self.parse_member_expression(left),        // DOT → member
             TokenType::Inc | TokenType::Dec => self.parse_update_postfix_expression(left), // INC DEC (x++, x--)
-    
+            TokenType::NullCoalesce => self.parse_null_coalesce_expression(left),
+
             _ => Some(left),   // no infix parser → expression ends, return left unchanged
         }
     }
@@ -753,15 +808,18 @@ impl Parser {
         };
 
         let mut variants = Vec::new();
-        while !self.peak_token_is(&TokenType::RBrace){
+        while !self.peak_token_is(&TokenType::RBrace) && !self.peak_token_is(&TokenType::EOF) {
+            self.next_token();
             let variant = match self.cur_token.token_type.clone() {
                 TokenType::Ident(v) => v,
-                _ => return None
+                _ => return None,
             };
             variants.push(variant);
-
-            if self.peak_token_is(&TokenType::Comma) { self.next_token();}
+            if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
         }
+
+        if !self.expect_peak(TokenType::RBrace) { return None; }
+        if !self.expect_peak(TokenType::Semicolon) { return None; }
 
         Some(Statement::Enum { name, variant: variants, line, column })
     }
@@ -868,44 +926,78 @@ impl Parser {
     fn parse_let_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
-    
-        if !self.expect_peak_ident() {
-            return None;
-        }
-        
-        let name = match &self.cur_token.token_type {
-            TokenType::Ident(n) => n.clone(),
-            _ => return None,
-        };
-    
-        if !self.expect_peak(TokenType::Asign) {
-            return None;
-        }
-    
-        self.next_token();
-        let value = self.parse_expression(Precedences::Lowest)?;
-    
-        if self.peak_token_is(&TokenType::Semicolon) {
+
+        let pattern = if self.peak_token_is(&TokenType::LBracket) {
             self.next_token();
-        }
-    
-        Some(Statement::Let { name, value, line, column })
+            let mut names = Vec::new();
+            while !self.peak_token_is(&TokenType::RBracket) {
+                self.next_token();
+                let name = match self.cur_token.token_type.clone() {
+                    TokenType::Ident(v) => v,
+                    _ => return None,
+                };
+                names.push(name);
+                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            }
+            if !self.expect_peak(TokenType::RBracket) { return None; }
+            LetPattern::Array(names)
+        } else if self.peak_token_is(&TokenType::LBrace) {
+            self.next_token();
+            let mut pairs = Vec::new();
+            while !self.peak_token_is(&TokenType::RBrace) {
+                self.next_token();
+                let key = match self.cur_token.token_type.clone() {
+                    TokenType::Ident(v) => v,
+                    _ => return None,
+                };
+                let alias = if self.peak_token_is(&TokenType::Colon) {
+                    self.next_token(); self.next_token();
+                    match self.cur_token.token_type.clone() { TokenType::Ident(v) => v, _ => return None }
+                } else { key.clone() };
+                pairs.push((key, alias));
+                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            }
+            if !self.expect_peak(TokenType::RBrace) { return None; }
+            LetPattern::Hash(pairs)
+        } else {
+            if !self.expect_peak_ident() { return None; }
+            let name = match self.cur_token.token_type.clone() {
+                TokenType::Ident(n) => n,
+                _ => return None,
+            };
+            LetPattern::Ident(name)
+        };
+
+        let value = if self.peak_token_is(&TokenType::Semicolon) || self.peak_token_is(&TokenType::EOF) {
+            if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
+            Expression::Null { line, column }
+        } else {
+            if !self.expect_peak(TokenType::Assign) { return None; }
+            self.next_token();
+            let v = self.parse_expression(Precedences::Lowest)?;
+            if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
+            v
+        };
+
+        Some(Statement::Let { pattern, value, line, column })
     }
 
     fn parse_expression(&mut self, precedences: Precedences) -> Option<Expression> {
         let mut left_exp = self.parse_prefix()?;
 
-        if self.peak_token_is(&TokenType::LBrace) {
-            return self.parse_struct_literal(left_exp);
-        }
-
         while !self.peak_token_is(&TokenType::Semicolon) && precedences < self.peak_precedence() {
             if !self.has_infix(&self.peak_token.token_type) {
-                return Some(left_exp);
+                break;
             }
-
             self.next_token();
-            left_exp = self.parse_infix(left_exp)?
+            left_exp = self.parse_infix(left_exp)?;
+        }
+
+        // struct literal: only fire after full Pratt parse, and only for bare idents
+        if self.peak_token_is(&TokenType::LBrace) {
+            if matches!(left_exp, Expression::Ident { .. }) {
+                return self.parse_struct_literal(left_exp);
+            }
         }
 
         Some(left_exp)
@@ -971,11 +1063,11 @@ impl Parser {
             | TokenType::Rem | TokenType::Square | TokenType::Floor
             | TokenType::EQ | TokenType::NOTEQ | TokenType::LT | TokenType::GT
             | TokenType::GreaterThanEqual | TokenType::LessThanEqual
-            | TokenType::And | TokenType::Or | TokenType::Asign
+            | TokenType::And | TokenType::Or | TokenType::Assign
             | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign
             | TokenType::QuoAssign | TokenType::RemAssign
             | TokenType::LParan | TokenType::LBracket | TokenType::Dot
-            | TokenType::Inc | TokenType::Dec
+            | TokenType::Inc | TokenType::Dec | TokenType::NullCoalesce
         )
     }
     

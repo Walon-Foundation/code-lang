@@ -10,6 +10,40 @@ const CHANGELOG: {
   sections: { title: string; items: string[] }[];
 }[] = [
   {
+    version: "v0.2.2",
+    date: "June 2026",
+    tag: "release",
+    sections: [
+      {
+        title: "Language",
+        items: [
+          "null keyword — write null as a literal value in any expression",
+          "let x; — uninitialized declaration defaults to null (no more required initializer)",
+          "?? null coalescing operator — 'a ?? b' returns b only when a is null",
+          "typeof keyword — 'typeof expr' returns the type name as a string",
+          "Array destructuring in let/const — 'let [a, b] = arr' binds elements by position",
+          "Hash destructuring in let/const — 'let { x, y } = hash' extracts keys by name, 'let { x: alias } = hash' renames",
+          "Default function parameters — 'fn(name, greeting = \"hi\")' uses the default when the argument is omitted",
+        ],
+      },
+      {
+        title: "Bug fixes",
+        items: [
+          "Struct self-methods with zero extra args no longer panic — 'point.get_x()' works correctly",
+          "Array index assignment now bounds-checks — out-of-range index returns an error instead of silently doing nothing",
+          "Importing a .cl file that fails at runtime now surfaces the error instead of swallowing it",
+        ],
+      },
+      {
+        title: "Safety",
+        items: [
+          "Float operations (sqrt, log, pow, trig) return a clean error on NaN or Infinity instead of propagating IEEE 754 special values",
+          "Number parsing in the lexer no longer panics on malformed literals — emits ILLEGAL token instead",
+        ],
+      },
+    ],
+  },
+  {
     version: "v0.2.1",
     date: "June 2026",
     tag: "release",

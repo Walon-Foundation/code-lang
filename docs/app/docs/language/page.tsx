@@ -41,13 +41,36 @@ export default function LanguageReference() {
       <h2 id="variables">Variables</h2>
       <p>
         <code>let</code> declares a mutable variable. <code>const</code> declares a constant —
-        reassignment is a runtime error.
+        reassignment is a runtime error. An uninitialized <code>let</code> defaults to <code>null</code>.
       </p>
       <Pre>{`let age = 25;
 const PI = 3.14159;
+let pending;       # null until assigned
 
 age = 26;      # ok
 PI  = 3;       # error: cannot reassign constant`}</Pre>
+
+      <h3>Destructuring</h3>
+      <p>
+        Unpack arrays and hashes directly into named bindings. Works with both <code>let</code> and <code>const</code>.
+        Use <code>_</code> to skip a position.
+      </p>
+      <Pre>{`# array destructuring
+let [a, b, c] = [1, 2, 3];
+a;   # 1
+
+let [first, _, third] = [10, 20, 30];
+first;   # 10
+third;   # 30
+
+# hash destructuring
+let { name, age } = { "name": "Walon", "age": 25 };
+name;   # Walon
+
+# rename on destructure
+let { name: n, age: years } = { "name": "Walon", "age": 25 };
+n;      # Walon
+years;  # 25`}</Pre>
 
       <h2 id="types">Types</h2>
       <div className="tbl"><table>
@@ -76,6 +99,7 @@ PI  = 3;       # error: cannot reassign constant`}</Pre>
           <tr><td>Compound assign</td><td><code>+= -= *= /= %=</code></td></tr>
           <tr><td>Increment / decrement</td><td><code>++</code> <code>--</code> prefix and postfix</td></tr>
           <tr><td>String concat</td><td><code>+</code> — works between strings</td></tr>
+          <tr><td>Null coalescing</td><td><code>??</code> — returns right side when left side is <code>null</code></td></tr>
         </tbody>
       </table></div>
       <Pre>{`2 ** 8;       # 256
@@ -84,7 +108,23 @@ PI  = 3;       # error: cannot reassign constant`}</Pre>
 
 let n = 5;
 n++;          # n is now 6
-n += 10;      # n is now 16`}</Pre>
+n += 10;      # n is now 16
+
+let x;           # x is null
+let y = x ?? 0;  # y is 0 because x is null
+let z = 5 ?? 0;  # z is 5`}</Pre>
+
+      <h2 id="typeof">typeof</h2>
+      <p>
+        The <code>typeof</code> keyword returns the type of any expression as a lowercase string.
+      </p>
+      <Pre>{`typeof 42;          # "integer"
+typeof 3.14;        # "float"
+typeof "hello";     # "string"
+typeof true;        # "boolean"
+typeof null;        # "null"
+typeof [1, 2];      # "array"
+typeof fn(x){x};    # "function"`}</Pre>
 
       <h2 id="string-interpolation">String interpolation</h2>
       <p>
@@ -170,6 +210,15 @@ let square = fn(x) { x * x };   # implicit return
 
 add(3, 4);      # 7
 square(9);      # 81`}</Pre>
+
+      <h3>Default parameters</h3>
+      <p>Parameters can have default values that are used when the caller omits the argument.</p>
+      <Pre>{`let greet = fn(name, msg = "Hello") {
+    "\${msg}, \${name}!"
+};
+
+greet("Walon");            # Hello, Walon!
+greet("Walon", "Hi");      # Hi, Walon!`}</Pre>
 
       <h3>Closures</h3>
       <p>Functions close over the enclosing scope and capture variables by reference.</p>

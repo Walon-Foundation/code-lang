@@ -10,12 +10,22 @@ fn to_f64(obj: &Object) -> Option<f64> {
     }
 }
 
+fn float_guard(v: f64, info: CallInfo) -> Object {
+    if v.is_nan() {
+        Object::Error { message: "floating-point operation produced NaN".to_string(), line: info.line, column: info.column }
+    } else if v.is_infinite() {
+        Object::Error { message: "floating-point operation produced Infinity".to_string(), line: info.line, column: info.column }
+    } else {
+        Object::Float(v)
+    }
+}
+
 fn sqrt(args: Vec<Object>, info: CallInfo) -> Object {
     if args.len() != 1 {
         return Object::Error { message: "math.sqrt takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.sqrt()),
+        Some(v) => float_guard(v.sqrt(), info),
         None => Object::Error { message: format!("math.sqrt expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -25,7 +35,7 @@ fn floor(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.floor takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.floor()),
+        Some(v) => float_guard(v.floor(), info),
         None => Object::Error { message: format!("math.floor expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -35,7 +45,7 @@ fn ceil(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.ceil takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.ceil()),
+        Some(v) => float_guard(v.ceil(), info),
         None => Object::Error { message: format!("math.ceil expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -45,7 +55,7 @@ fn round(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.round takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.round()),
+        Some(v) => float_guard(v.round(), info),
         None => Object::Error { message: format!("math.round expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -55,7 +65,7 @@ fn trunc(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.trunc takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.trunc()),
+        Some(v) => float_guard(v.trunc(), info),
         None => Object::Error { message: format!("math.trunc expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -83,7 +93,7 @@ fn pow(args: Vec<Object>, info: CallInfo) -> Object {
         Some(v) => v,
         None => return Object::Error { message: format!("math.pow expects numbers, got {}", args[1].type_name()), line: info.line, column: info.column },
     };
-    Object::Float(base.powf(exp))
+    float_guard(base.powf(exp), info)
 }
 
 fn log(args: Vec<Object>, info: CallInfo) -> Object {
@@ -91,7 +101,7 @@ fn log(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.log takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.ln()),
+        Some(v) => float_guard(v.ln(), info),
         None => Object::Error { message: format!("math.log expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -101,7 +111,7 @@ fn log10(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.log10 takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.log10()),
+        Some(v) => float_guard(v.log10(), info),
         None => Object::Error { message: format!("math.log10 expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -111,7 +121,7 @@ fn exp(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.exp takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.exp()),
+        Some(v) => float_guard(v.exp(), info),
         None => Object::Error { message: format!("math.exp expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -121,7 +131,7 @@ fn sin(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.sin takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.sin()),
+        Some(v) => float_guard(v.sin(), info),
         None => Object::Error { message: format!("math.sin expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -131,7 +141,7 @@ fn cos(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.cos takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.cos()),
+        Some(v) => float_guard(v.cos(), info),
         None => Object::Error { message: format!("math.cos expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -141,7 +151,7 @@ fn tan(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.tan takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.tan()),
+        Some(v) => float_guard(v.tan(), info),
         None => Object::Error { message: format!("math.tan expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }
@@ -204,7 +214,7 @@ fn log2(args: Vec<Object>, info: CallInfo) -> Object {
         return Object::Error { message: "math.log2 takes 1 argument".to_string(), line: info.line, column: info.column };
     }
     match to_f64(&args[0]) {
-        Some(v) => Object::Float(v.log2()),
+        Some(v) => float_guard(v.log2(), info),
         None => Object::Error { message: format!("math.log2 expects a number, got {}", args[0].type_name()), line: info.line, column: info.column },
     }
 }

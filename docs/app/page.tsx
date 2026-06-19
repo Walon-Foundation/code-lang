@@ -1,25 +1,27 @@
-import Image from "next/image";
 import Link from "next/link";
 import HomeInstall from "./components/HomeInstall";
 
 const EXAMPLE = `import "fmt";
 import "math";
-import "strings";
 
 struct Point {
     x: 0,
     y: 0,
+    distance: fn(self) {
+        math.sqrt(self.x ** 2 + self.y ** 2)
+    },
 }
 
-let distance = fn(p) {
-    return math.sqrt(p.x ** 2 + p.y ** 2);
-};
+enum Status { Ok, Pending, Err }
 
 let p = Point { x: 3, y: 4 };
+let status = Status.Ok;
+let label = null ?? "no label";
 
-fmt.print("point:", p.x, p.y);
-fmt.print("distance:", distance(p));
-fmt.print("tag:", strings.to_upper("code-lang"));`;
+let [a, b] = [p.x, p.y];
+fmt.print("x:", a, "y:", b);
+fmt.print("dist:", p.distance());
+fmt.print("type:", typeof status);`;
 
 const FEATURES = [
   {
@@ -30,12 +32,22 @@ const FEATURES = [
   {
     icon: "λ",
     title: "First-class functions",
-    body: "Functions are values. Closures, higher-order, recursion — all built in.",
+    body: "Functions are values. Closures, higher-order, recursion, default parameters — all built in.",
   },
   {
     icon: "◈",
-    title: "Structs",
-    body: "Define types with default fields. Dot-notation access. No boilerplate.",
+    title: "Structs with self-methods",
+    body: "Define types with default fields and methods. Call point.distance() — self is injected automatically.",
+  },
+  {
+    icon: "⊞",
+    title: "Enums and switch",
+    body: "Named variant sets with dot access. Switch dispatches on any value with ==.",
+  },
+  {
+    icon: "⧉",
+    title: "Destructuring",
+    body: "Unpack arrays and hashes directly: let [a, b] = arr and let { x, y } = hash.",
   },
   {
     icon: "◻",
@@ -44,24 +56,56 @@ const FEATURES = [
   },
   {
     icon: "⌗",
-    title: "Module system",
-    body: "Import any stdlib module or your own .cl files. Flat, simple, no surprises.",
+    title: "Null safety",
+    body: "null is a first-class value. let x; defaults to null. ?? returns the right side when the left is null.",
   },
   {
     icon: "↯",
     title: "Precise errors",
-    body: "Every error shows the source line and a caret — you see exactly where it went wrong.",
+    body: "Every error shows the source line, a caret, and a hint on how to fix it.",
   },
 ];
 
 const MODULES = ["fmt", "math", "strings", "arrays", "hash", "fs", "path", "os", "time", "json", "rand", "http"];
+
+const ROADMAP = [
+  {
+    label: "VS Code extension",
+    desc: "Syntax highlighting for .cl files in VS Code, Cursor, and all Electron-based editors.",
+    status: "in progress",
+  },
+  {
+    label: "code-lang-lsp",
+    desc: "Language server with parse diagnostics — underlines errors in the editor as you type.",
+    status: "in progress",
+  },
+  {
+    label: "code-lang-fmt",
+    desc: "Formatter with check and lint subcommands. code-lang-fmt check exits 1 on parse errors.",
+    status: "in progress",
+  },
+  {
+    label: "Install script",
+    desc: "curl | sh that drops code-lang, code-lang-lsp, and code-lang-fmt into ~/.code-lang/bin/.",
+    status: "planned",
+  },
+  {
+    label: "Zed extension",
+    desc: "Tree-sitter grammar and language server integration for Zed.",
+    status: "planned",
+  },
+  {
+    label: "Higher-order stdlib",
+    desc: "arrays.map, filter, reduce, find, any, all with user-defined functions.",
+    status: "done",
+  },
+];
 
 export default function Home() {
   return (
     <main>
       {/* ── Hero ─────────────────────────────────────── */}
       <section className="pw s-hero">
-        {/* Badge */}
         <div
           style={{
             display: "inline-flex",
@@ -78,10 +122,9 @@ export default function Home() {
           }}
         >
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#818cf8", display: "inline-block" }} />
-          Active development · v0.2.0
+          Active development · v0.2.2
         </div>
 
-        {/* Headline */}
         <h1
           style={{
             fontSize: "clamp(2.5rem, 6vw, 4rem)",
@@ -116,10 +159,9 @@ export default function Home() {
           }}
         >
           code-lang is a general-purpose interpreted language built in Rust — fast to learn,
-          with first-class functions, structs, and a complete standard library.
+          with first-class functions, structs, enums, destructuring, and a complete standard library.
         </p>
 
-        {/* CTAs */}
         <div className="cta-row">
           <Link
             href="/docs"
@@ -166,7 +208,6 @@ export default function Home() {
       {/* ── Code showcase ────────────────────────────── */}
       <section style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
         <div className="pw s-md">
-          {/* Terminal chrome */}
           <div
             style={{
               borderRadius: "10px",
@@ -187,7 +228,7 @@ export default function Home() {
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ffbd2e" }} />
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#28ca42" }} />
-              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#52525b" }}>hello.cl</span>
+              <span style={{ marginLeft: "0.5rem", fontSize: "0.75rem", color: "#52525b" }}>example.cl</span>
             </div>
             <pre
               style={{
@@ -196,11 +237,11 @@ export default function Home() {
                 fontFamily: "var(--font-mono)",
                 fontSize: "0.875rem",
                 lineHeight: 1.75,
-                color: "#c4b5fd",
+                color: "#d4d4d8",
                 overflowX: "auto",
               }}
             >
-              <code style={{ color: "#d4d4d8" }}>{EXAMPLE}</code>
+              <code>{EXAMPLE}</code>
             </pre>
           </div>
         </div>
@@ -238,10 +279,7 @@ export default function Home() {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              style={{
-                background: "var(--bg)",
-                padding: "1.75rem",
-              }}
+              style={{ background: "var(--bg)", padding: "1.75rem" }}
             >
               <div
                 style={{
@@ -292,13 +330,81 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Install ──────────────────────────────────── */}
+      {/* ── Roadmap ──────────────────────────────────── */}
       <section className="pw s-lg">
+        <p style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#52525b", marginBottom: "1rem" }}>
+          Roadmap
+        </p>
+        <h2
+          style={{
+            fontSize: "1.875rem",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: "var(--text)",
+            marginBottom: "0.75rem",
+            lineHeight: 1.2,
+          }}
+        >
+          What&apos;s coming next.
+        </h2>
+        <p style={{ fontSize: "0.9375rem", color: "var(--muted)", marginBottom: "2.5rem", maxWidth: "480px", lineHeight: 1.7 }}>
+          The interpreter is stable. The next milestone is the toolchain — editor support, a formatter, and an install script.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+          {ROADMAP.map((item, i) => {
+            const statusColor =
+              item.status === "done"
+                ? { color: "#86efac", bg: "rgba(134,239,172,0.08)", border: "rgba(134,239,172,0.2)" }
+                : item.status === "in progress"
+                ? { color: "#818cf8", bg: "rgba(129,140,248,0.08)", border: "rgba(129,140,248,0.2)" }
+                : { color: "#52525b", bg: "rgba(82,82,91,0.08)", border: "rgba(82,82,91,0.2)" };
+            return (
+              <div
+                key={item.label}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "1.25rem",
+                  padding: "1.25rem 0",
+                  borderBottom: i < ROADMAP.length - 1 ? "1px solid var(--border)" : "none",
+                }}
+              >
+                <span
+                  style={{
+                    flexShrink: 0,
+                    marginTop: "0.15rem",
+                    fontSize: "0.65rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: statusColor.color,
+                    background: statusColor.bg,
+                    border: `1px solid ${statusColor.border}`,
+                    borderRadius: "4px",
+                    padding: "0.2rem 0.45rem",
+                    minWidth: "80px",
+                    textAlign: "center" as const,
+                  }}
+                >
+                  {item.status}
+                </span>
+                <div>
+                  <p style={{ fontWeight: 600, color: "var(--text)", fontSize: "0.9rem", marginBottom: "0.2rem" }}>{item.label}</p>
+                  <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, lineHeight: 1.6 }}>{item.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Install ──────────────────────────────────── */}
+      <section className="pw s-lg" style={{ borderTop: "1px solid var(--border)" }}>
         <h2 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-0.03em", color: "var(--text)", marginBottom: "0.625rem" }}>
           Install
         </h2>
         <p style={{ fontSize: "0.9375rem", color: "var(--muted)", marginBottom: "2rem" }}>
-          Pre-built binaries for Linux, macOS, and Windows. No Rust required.
+          Build from source with Cargo. Pre-built binaries and an install script are coming.
         </p>
         <div style={{ maxWidth: 560 }}>
           <HomeInstall />

@@ -283,6 +283,33 @@ admin.name;    # Walon
 guest.name;    # Guest
 guest.active;  # true`}</Pre>
 
+      <h3>Self-methods</h3>
+      <p>
+        Give a struct a method by storing a function in a field. Name the first parameter{" "}
+        <code>self</code> — the interpreter injects the receiver automatically when the method is called
+        with dot notation. You never pass <code>self</code> explicitly.
+      </p>
+      <Pre>{`struct Point {
+    x: 0,
+    y: 0,
+    distance: fn(self) {
+        import "math";
+        math.sqrt(self.x ** 2 + self.y ** 2)
+    },
+    translate: fn(self, dx, dy) {
+        Point { x: self.x + dx, y: self.y + dy }
+    },
+}
+
+let p = Point { x: 3, y: 4 };
+p.distance();           # 5.0
+p.translate(1, 1).x;   # 4`}</Pre>
+      <Note>
+        Default parameters work in self-methods too:{" "}
+        <code>{"fn(self, factor = 2) { self.x * factor }"}</code>.
+        Arity errors skip the implicit <code>self</code> in the message so it reads naturally.
+      </Note>
+
       <h2 id="enums">Enums</h2>
       <p>
         Enums define a named set of variants. Access variants with dot notation. Variants compare equal

@@ -5,22 +5,22 @@ use std::collections::HashMap;
 pub enum NameKind {
     Let,
     Const,
-    Function,     // let f = fn(...) { ... }
-    Param,        // fn(x, y) — each parameter
-    Import,       // import "math"
-    StructName,   // struct Point { ... }
-    StructField,  // reserved — struct fields live on the struct, not in flat scope
-    EnumVariant,  // reserved — accessed as Enum.Variant, not as bare names
-    ForInKey,     // for k, v in ...  →  k
-    ForInValue,   // for k, v in ...  →  v
+    Function,    // let f = fn(...) { ... }
+    Param,       // fn(x, y) — each parameter
+    Import,      // import "math"
+    StructName,  // struct Point { ... }
+    StructField, // reserved — struct fields live on the struct, not in flat scope
+    EnumVariant, // reserved — accessed as Enum.Variant, not as bare names
+    ForInKey,    // for k, v in ...  →  k
+    ForInValue,  // for k, v in ...  →  v
 }
 
 pub struct NameBinding {
-    pub name:   String,
-    pub kind:   NameKind,
-    pub line:   usize,
+    pub name: String,
+    pub kind: NameKind,
+    pub line: usize,
     pub column: usize,
-    pub is_pub: bool,               // true when declared with `pub`
+    pub is_pub: bool,                // true when declared with `pub`
     pub params: Option<Vec<String>>, // parameter names when kind == Function
 }
 
@@ -46,12 +46,33 @@ impl ScopeTree {
             start: (0, 0),
             end: (usize::MAX, usize::MAX),
         };
-        ScopeTree { scopes: vec![root], root: 0 }
+        ScopeTree {
+            scopes: vec![root],
+            root: 0,
+        }
     }
+}
 
-    pub fn push_scope(&mut self, parent: ScopeId, start: (usize, usize), end: (usize, usize)) -> ScopeId {
+impl Default for ScopeTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ScopeTree {
+    pub fn push_scope(
+        &mut self,
+        parent: ScopeId,
+        start: (usize, usize),
+        end: (usize, usize),
+    ) -> ScopeId {
         let id = self.scopes.len();
-        self.scopes.push(Scope { bindings: vec![], parent: Some(parent), start, end });
+        self.scopes.push(Scope {
+            bindings: vec![],
+            parent: Some(parent),
+            start,
+            end,
+        });
         id
     }
 
@@ -86,10 +107,12 @@ impl ScopeTree {
             let (el, ec) = scope.end;
 
             let after_start = line > sl || (line == sl && col >= sc);
-            let before_end  = line < el || (line == el && col <= ec);
+            let before_end = line < el || (line == el && col <= ec);
 
             if after_start && before_end {
-                let size = (el.saturating_sub(sl)).saturating_mul(10000).saturating_add(ec);
+                let size = (el.saturating_sub(sl))
+                    .saturating_mul(10000)
+                    .saturating_add(ec);
                 if size < best_size {
                     best = id;
                     best_size = size;
@@ -110,9 +133,20 @@ impl ScopeAnalyzer {
     pub fn new() -> Self {
         let tree = ScopeTree::new();
         let root = tree.root;
-        ScopeAnalyzer { tree, current: root }
+        ScopeAnalyzer {
+            tree,
+            current: root,
+        }
     }
+}
 
+impl Default for ScopeAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ScopeAnalyzer {
     pub fn analyze(program: &Program) -> ScopeTree {
         let mut analyzer = ScopeAnalyzer::new();
         analyzer.visit_program(program);
@@ -124,7 +158,7 @@ impl ScopeAnalyzer {
     }
 
     fn enter_scope(&mut self, start: (usize, usize), end: (usize, usize)) -> ScopeId {
-        let prev   = self.current;
+        let prev = self.current;
         let new_id = self.tree.push_scope(self.current, start, end);
         self.current = new_id;
         prev
@@ -136,11 +170,16 @@ impl ScopeAnalyzer {
 }
 
 impl Visitor for ScopeAnalyzer {
-
     fn visit_statement(&mut self, stmt: &Statement) {
         match stmt {
-
-            Statement::Block { statements, line, column, end_line, end_column, .. } => {
+            Statement::Block {
+                statements,
+                line,
+                column,
+                end_line,
+                end_column,
+                ..
+            } => {
                 let saved = self.enter_scope((*line, *column), (*end_line, *end_column));
                 for s in statements {
                     self.visit_statement(s);
@@ -151,28 +190,31 @@ impl Visitor for ScopeAnalyzer {
             // Pub wraps a Let or Const and makes the binding visible to importers.
             // We handle the binding here directly so visit_let / visit_const
             // are NOT called afterward (which would record the name a second time).
-            Statement::Pub { statement, line, column, .. } => {
-                match statement.as_ref() {
-                    Statement::Let { pattern, value, .. } => {
-                        self.record_let(pattern, value, *line, *column, true);
-                        self.visit_expression(value);
-                    }
-                    Statement::Const { pattern, value, .. } => {
-                        if let LetPattern::Ident(name) = pattern {
-                            self.add(NameBinding {
-                                name: name.clone(),
-                                kind: NameKind::Const,
-                                line: *line,
-                                column: *column,
-                                is_pub: true,
-                                params: None,
-                            });
-                        }
-                        self.visit_expression(value);
-                    }
-                    _ => walk_statement(self, statement),
+            Statement::Pub {
+                statement,
+                line,
+                column,
+                ..
+            } => match statement.as_ref() {
+                Statement::Let { pattern, value, .. } => {
+                    self.record_let(pattern, value, *line, *column, true);
+                    self.visit_expression(value);
                 }
-            }
+                Statement::Const { pattern, value, .. } => {
+                    if let LetPattern::Ident(name) = pattern {
+                        self.add(NameBinding {
+                            name: name.clone(),
+                            kind: NameKind::Const,
+                            line: *line,
+                            column: *column,
+                            is_pub: true,
+                            params: None,
+                        });
+                    }
+                    self.visit_expression(value);
+                }
+                _ => walk_statement(self, statement),
+            },
 
             _ => walk_statement(self, stmt),
         }
@@ -180,14 +222,21 @@ impl Visitor for ScopeAnalyzer {
 
     fn visit_expression(&mut self, expr: &Expression) {
         match expr {
-
-            Expression::Function { parameter, body, line, column, end_line, end_column, .. } => {
+            Expression::Function {
+                parameter,
+                body,
+                line,
+                column,
+                end_line,
+                end_column,
+                ..
+            } => {
                 let saved = self.enter_scope((*line, *column), (*end_line, *end_column));
                 for param in parameter {
                     self.add(NameBinding {
-                        name:   param.name.clone(),
-                        kind:   NameKind::Param,
-                        line:   *line,
+                        name: param.name.clone(),
+                        kind: NameKind::Param,
+                        line: *line,
                         column: *column,
                         is_pub: false,
                         params: None,
@@ -200,22 +249,32 @@ impl Visitor for ScopeAnalyzer {
             // for k, v in iterable { body }
             // The iterable is evaluated in the outer scope.
             // k and v are only visible inside the loop body.
-            Expression::ForIn { key, value, iterable, body, line, column, end_line, end_column, .. } => {
+            Expression::ForIn {
+                key,
+                value,
+                iterable,
+                body,
+                line,
+                column,
+                end_line,
+                end_column,
+                ..
+            } => {
                 self.visit_expression(iterable);
                 let saved = self.enter_scope((*line, *column), (*end_line, *end_column));
                 self.add(NameBinding {
-                    name:   key.clone(),
-                    kind:   NameKind::ForInKey,
-                    line:   *line,
+                    name: key.clone(),
+                    kind: NameKind::ForInKey,
+                    line: *line,
                     column: *column,
                     is_pub: false,
                     params: None,
                 });
                 if let Some(v) = value {
                     self.add(NameBinding {
-                        name:   v.clone(),
-                        kind:   NameKind::ForInValue,
-                        line:   *line,
+                        name: v.clone(),
+                        kind: NameKind::ForInValue,
+                        line: *line,
                         column: *column,
                         is_pub: false,
                         params: None,
@@ -247,10 +306,10 @@ impl Visitor for ScopeAnalyzer {
     }
 
     fn visit_import(&mut self, path: &str, line: usize, col: usize) {
-        let name = path.split('/').last().unwrap_or(path).to_string();
+        let name = path.split('/').next_back().unwrap_or(path).to_string();
         self.add(NameBinding {
             name,
-            kind:   NameKind::Import,
+            kind: NameKind::Import,
             line,
             column: col,
             is_pub: false,
@@ -259,11 +318,17 @@ impl Visitor for ScopeAnalyzer {
     }
 
     fn visit_struct_decl(&mut self, name: &Expression, _fields: &HashMap<String, Expression>) {
-        if let Expression::Ident { value, line, column, .. } = name {
+        if let Expression::Ident {
+            value,
+            line,
+            column,
+            ..
+        } = name
+        {
             self.add(NameBinding {
-                name:   value.clone(),
-                kind:   NameKind::StructName,
-                line:   *line,
+                name: value.clone(),
+                kind: NameKind::StructName,
+                line: *line,
                 column: *column,
                 is_pub: false,
                 params: None,
@@ -273,8 +338,8 @@ impl Visitor for ScopeAnalyzer {
 
     fn visit_enum_decl(&mut self, name: &str, _variants: &[String], line: usize, col: usize) {
         self.add(NameBinding {
-            name:   name.to_string(),
-            kind:   NameKind::Const,
+            name: name.to_string(),
+            kind: NameKind::Const,
             line,
             column: col,
             is_pub: false,
@@ -287,7 +352,14 @@ impl ScopeAnalyzer {
     // Shared logic for visit_let and the Pub handler.
     // Detects whether the value is a function so the binding gets
     // NameKind::Function and its parameter names recorded.
-    fn record_let(&mut self, pattern: &LetPattern, value: &Expression, line: usize, col: usize, is_pub: bool) {
+    fn record_let(
+        &mut self,
+        pattern: &LetPattern,
+        value: &Expression,
+        line: usize,
+        col: usize,
+        is_pub: bool,
+    ) {
         let (kind, params) = match value {
             Expression::Function { parameter, .. } => (
                 NameKind::Function,
@@ -298,21 +370,36 @@ impl ScopeAnalyzer {
 
         match pattern {
             LetPattern::Ident(name) => {
-                self.add(NameBinding { name: name.clone(), kind, line, column: col, is_pub, params });
+                self.add(NameBinding {
+                    name: name.clone(),
+                    kind,
+                    line,
+                    column: col,
+                    is_pub,
+                    params,
+                });
             }
             LetPattern::Array(names) => {
                 for n in names {
                     self.add(NameBinding {
-                        name: n.clone(), kind: NameKind::Let,
-                        line, column: col, is_pub, params: None,
+                        name: n.clone(),
+                        kind: NameKind::Let,
+                        line,
+                        column: col,
+                        is_pub,
+                        params: None,
                     });
                 }
             }
             LetPattern::Hash(pairs) => {
                 for (_, alias) in pairs {
                     self.add(NameBinding {
-                        name: alias.clone(), kind: NameKind::Let,
-                        line, column: col, is_pub, params: None,
+                        name: alias.clone(),
+                        kind: NameKind::Let,
+                        line,
+                        column: col,
+                        is_pub,
+                        params: None,
                     });
                 }
             }

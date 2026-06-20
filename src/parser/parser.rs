@@ -1523,6 +1523,7 @@ impl Parser {
            if let Some(stmt) = self.parse_statement(){
                program.statements.push(stmt);
            }
+           self.next_token();
         }
 
         program

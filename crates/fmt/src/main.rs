@@ -1,4 +1,5 @@
 mod commands;
+mod util;
 mod lint_rules;
 use std::path::PathBuf;
 
@@ -22,7 +23,11 @@ enum Commands {
     /// Check files for syntax errors without modifying them
     Check { files: Vec<PathBuf> },
     /// Lint files for style issues
-    Lint { files: Vec<PathBuf> },
+    Lint {
+        files: Vec<PathBuf>,
+        #[arg(long)]
+        fix: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -31,8 +36,8 @@ fn main() -> Result<()> {
         Some(Commands::Check { files }) => {
             check_file(&files)?;
         }
-        Some(Commands::Lint { files }) => {
-            lint_file(&files)?;
+        Some(Commands::Lint { files, fix }) => {
+            lint_file(&files, fix)?;
         }
         None => {}
     }

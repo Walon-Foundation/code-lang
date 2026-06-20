@@ -1,6 +1,6 @@
-use crate::ast::ast::{
-    Expression, Statement, Program, LetPattern, Param, SwitchArm, StringSegment,
-};
+use crate::{ast::ast::{
+    Expression, LetPattern, Param, Program, Statement, StringSegment, SwitchArm
+}, token::token::{Token, TokenType}};
 
 // The Visitor trait.
 // Every method has a default implementation that calls the
@@ -40,12 +40,13 @@ pub trait Visitor: Sized {
                   _line: usize, _col: usize) {}
     fn visit_member(&mut self, _object: &Expression, _property: &Expression,
                     _line: usize, _col: usize) {}
-    fn visit_infix(&mut self, _left: &Expression, _right: &Expression,
+    fn visit_infix(&mut self, _op:TokenType, _left: &Expression, _right: &Expression,
                    _line: usize, _col: usize) {}
     fn visit_function(&mut self, _params: &[Param], _body: &Statement,
                       _line: usize, _col: usize) {}
     fn visit_if(&mut self, _condition: &Expression, _consequence: &Statement,
                 _line: usize, _col: usize) {}
+    fn visit_update(&mut self, _operator: &Token, _target: &Expression, _line: usize, _col: usize) {}
 }
 
 
@@ -151,8 +152,8 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             v.visit_expression(property);
         }
 
-        Expression::Infix { left, right, line, column, .. } => {
-            v.visit_infix(left, right, *line, *column);
+        Expression::Infix { left, op, right, line, column, .. } => {
+            v.visit_infix(op.token_type.clone(), left, right, *line, *column);
             v.visit_expression(left);
             v.visit_expression(right);
         }
@@ -245,7 +246,8 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             }
         }
 
-        Expression::Update { target, .. } => {
+        Expression::Update { operator, target, line, column, .. } => {
+            v.visit_update(operator, target, *line, *column);
             v.visit_expression(target);
         }
 

@@ -17,3 +17,5 @@ dist/
 docs/.next/
 docs/node_modules/
 docs/.env*.local.claude/
+TOOLCHAIN_PLAN.md
+better_tools.md

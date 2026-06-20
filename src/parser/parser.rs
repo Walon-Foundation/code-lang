@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{ast::ast::{ElseIF, Expression, LetPattern, Statement, StringSegment, SwitchArm}, lexer::lexer::Lexer, token::token::{StringPart, Token, TokenType}};
 use crate::ast::ast::Program;
+use crate::{
+    ast::ast::{ElseIF, Expression, LetPattern, Statement, StringSegment, SwitchArm},
+    lexer::lexer::Lexer,
+    token::token::{StringPart, Token, TokenType},
+};
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub enum Precedences {
@@ -18,33 +22,21 @@ pub enum Precedences {
     Postfix,
     Call,
     Index,
-    Member
+    Member,
 }
 
-//Error Kind 
+//Error Kind
 #[derive(Debug)]
 pub enum ParseErrorKind {
-    UnexpectedToken {
-        expected:TokenType,
-        got: Token
-    },
+    UnexpectedToken { expected: TokenType, got: Token },
     UnexpectedEOF,
-    UnclosedDelimiter{
-        open: TokenType
-    },
-    InvalidLiteral {
-        raw: String
-    },
+    UnclosedDelimiter { open: TokenType },
+    InvalidLiteral { raw: String },
     MissingExpression,
-    IllegalKeyword{
-        keyword: Token
-    },
-    InterpolationError {
-        source: Vec<ParseError>
-    },
-    Other
+    IllegalKeyword { keyword: Token },
+    InterpolationError { source: Vec<ParseError> },
+    Other,
 }
-
 
 #[derive(Debug)]
 pub struct ParseError {
@@ -58,16 +50,18 @@ pub struct ParseError {
 pub struct Parser {
     l: Lexer,
     pub errors: Vec<ParseError>,
-    cur_token:Token,
-    peak_token:Token,
+    cur_token: Token,
+    peak_token: Token,
 }
-
 
 impl Parser {
     fn precedence_of(tok: &TokenType) -> Precedences {
         match tok {
             TokenType::EQ | TokenType::NOTEQ => Precedences::Equals,
-            TokenType::LT | TokenType::GT | TokenType::LessThanEqual | TokenType::GreaterThanEqual => Precedences::LessGreater,
+            TokenType::LT
+            | TokenType::GT
+            | TokenType::LessThanEqual
+            | TokenType::GreaterThanEqual => Precedences::LessGreater,
             TokenType::Plus | TokenType::Minus => Precedences::Sum,
             TokenType::SLASH | TokenType::Asterisk | TokenType::Rem => Precedences::Product,
             TokenType::And => Precedences::And,
@@ -102,14 +96,20 @@ impl Parser {
 
         let value = self.parse_expression(Precedences::Lowest)?;
 
-        if !self.expect_peak(TokenType::Semicolon){
+        if !self.expect_peak(TokenType::Semicolon) {
             return None;
         }
 
         // cur_token is ';'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Return { value, line, column, end_line, end_column })
+        Some(Statement::Return {
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_const_statement(&mut self) -> Option<Statement> {
@@ -129,7 +129,10 @@ impl Parser {
                                 expected: TokenType::Ident(String::new()),
                                 got: self.cur_token.clone(),
                             },
-                            message: format!("expected identifier in array destructuring pattern, got {:?}", self.cur_token.token_type),
+                            message: format!(
+                                "expected identifier in array destructuring pattern, got {:?}",
+                                self.cur_token.token_type
+                            ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
                         });
@@ -137,9 +140,13 @@ impl Parser {
                     }
                 };
                 names.push(name);
-                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+                if self.peak_token_is(&TokenType::Comma) {
+                    self.next_token();
+                }
             }
-            if !self.expect_peak(TokenType::RBracket) { return None; }
+            if !self.expect_peak(TokenType::RBracket) {
+                return None;
+            }
             LetPattern::Array(names)
         } else if self.peak_token_is(&TokenType::LBrace) {
             self.next_token();
@@ -154,7 +161,10 @@ impl Parser {
                                 expected: TokenType::Ident(String::new()),
                                 got: self.cur_token.clone(),
                             },
-                            message: format!("expected identifier in hash destructuring pattern, got {:?}", self.cur_token.token_type),
+                            message: format!(
+                                "expected identifier in hash destructuring pattern, got {:?}",
+                                self.cur_token.token_type
+                            ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
                         });
@@ -162,7 +172,8 @@ impl Parser {
                     }
                 };
                 let alias = if self.peak_token_is(&TokenType::Colon) {
-                    self.next_token(); self.next_token();
+                    self.next_token();
+                    self.next_token();
                     match self.cur_token.token_type.clone() {
                         TokenType::Ident(v) => v,
                         _ => {
@@ -171,21 +182,32 @@ impl Parser {
                                     expected: TokenType::Ident(String::new()),
                                     got: self.cur_token.clone(),
                                 },
-                                message: format!("expected identifier for destructuring alias, got {:?}", self.cur_token.token_type),
+                                message: format!(
+                                    "expected identifier for destructuring alias, got {:?}",
+                                    self.cur_token.token_type
+                                ),
                                 line: self.cur_token.line,
                                 column: self.cur_token.column,
                             });
                             return None;
                         }
                     }
-                } else { key.clone() };
+                } else {
+                    key.clone()
+                };
                 pairs.push((key, alias));
-                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+                if self.peak_token_is(&TokenType::Comma) {
+                    self.next_token();
+                }
             }
-            if !self.expect_peak(TokenType::RBrace) { return None; }
+            if !self.expect_peak(TokenType::RBrace) {
+                return None;
+            }
             LetPattern::Hash(pairs)
         } else {
-            if !self.expect_peak_ident() { return None; }
+            if !self.expect_peak_ident() {
+                return None;
+            }
             let name = match &self.cur_token.token_type {
                 TokenType::Ident(value) => value.clone(),
                 _ => return None,
@@ -193,18 +215,29 @@ impl Parser {
             LetPattern::Ident(name)
         };
 
-        if !self.expect_peak(TokenType::Assign) { return None; }
+        if !self.expect_peak(TokenType::Assign) {
+            return None;
+        }
         self.next_token();
         let value = self.parse_expression(Precedences::Lowest)?;
-        if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
+        if self.peak_token_is(&TokenType::Semicolon) {
+            self.next_token();
+        }
 
         // cur_token is ';' or last token of value expression
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Const { pattern, value, line, column, end_line, end_column })
+        Some(Statement::Const {
+            pattern,
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
-    fn parse_integer_literal(&self) -> Option<Expression>{
+    fn parse_integer_literal(&self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
@@ -215,7 +248,13 @@ impl Parser {
 
         let end_line = line;
         let end_column = column + format!("{}", value).len();
-        Some(Expression::Int { value, line, column, end_line, end_column })
+        Some(Expression::Int {
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_float_literal(&self) -> Option<Expression> {
@@ -229,14 +268,20 @@ impl Parser {
 
         let end_line = line;
         let end_column = column + 1; // approximate; raw lexeme not stored
-        Some(Expression::Float { value, line, column, end_line, end_column })
+        Some(Expression::Float {
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_while_expression(&mut self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
-        if !self.expect_peak(TokenType::LParan){
+        if !self.expect_peak(TokenType::LParan) {
             return None;
         }
 
@@ -244,11 +289,11 @@ impl Parser {
 
         let condition = self.parse_expression(Precedences::Lowest)?;
 
-        if !self.expect_peak(TokenType::RParen){
+        if !self.expect_peak(TokenType::RParen) {
             return None;
         }
 
-        if !self.expect_peak(TokenType::LBrace){
+        if !self.expect_peak(TokenType::LBrace) {
             return None;
         }
 
@@ -337,21 +382,27 @@ impl Parser {
         // cur_token is '}' (or EOF)
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Block { statements, line, column, end_line, end_column })
+        Some(Statement::Block {
+            statements,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
         self.next_token();
 
         let exp = self.parse_expression(Precedences::Lowest);
-        if !self.expect_peak(TokenType::RParen){
+        if !self.expect_peak(TokenType::RParen) {
             return None;
         }
 
         exp
     }
 
-    fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression>{
+    fn parse_infix_expression(&mut self, left: Expression) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
         let op = self.cur_token.clone();
@@ -424,44 +475,56 @@ impl Parser {
         // cur_token is last token of right operand
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Prefix { op, right: Box::from(right), line, column, end_line, end_column })
+        Some(Expression::Prefix {
+            op,
+            right: Box::from(right),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
-
-
 
     fn parse_prefix(&mut self) -> Option<Expression> {
         match &self.cur_token.token_type {
-            TokenType::Ident(_)      => self.parse_identifier(),              // IDENT
-            TokenType::Int(_)        => self.parse_integer_literal(),         // INT
-            TokenType::Float(_)      => self.parse_float_literal(),           // FLOAT
-            TokenType::InterpolatedString(_) => self.parse_string_literal(),   // STRING
-            TokenType::Char(_)       => self.parse_char_literal(),            // CHAR
-            TokenType::True | TokenType::False => self.parse_boolean(),       // TRUE, FALSE
-            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(),       // BANG, MINUS
-            TokenType::Inc | TokenType::Dec    => self.parse_update_prefix_expression(), // INC, DEC (++x, --x)
-            TokenType::LParan        => self.parse_grouped_expression(),      // LPAREN
-            TokenType::If            => self.parse_if_expression(),           // IF
-            TokenType::Function      => self.parse_function_literal(),        // FUNCTION
-            TokenType::LBracket      => self.parse_array_literal(),           // LBRACKET
-            TokenType::LBrace        => self.parse_hash_literal(),            // LBRACE
-            TokenType::For           => {
-                if !self.expect_peak(TokenType::LParan) { return None; }
+            TokenType::Ident(_) => self.parse_identifier(), // IDENT
+            TokenType::Int(_) => self.parse_integer_literal(), // INT
+            TokenType::Float(_) => self.parse_float_literal(), // FLOAT
+            TokenType::InterpolatedString(_) => self.parse_string_literal(), // STRING
+            TokenType::Char(_) => self.parse_char_literal(), // CHAR
+            TokenType::True | TokenType::False => self.parse_boolean(), // TRUE, FALSE
+            TokenType::Bang | TokenType::Minus => self.parse_prefix_expression(), // BANG, MINUS
+            TokenType::Inc | TokenType::Dec => self.parse_update_prefix_expression(), // INC, DEC (++x, --x)
+            TokenType::LParan => self.parse_grouped_expression(),                     // LPAREN
+            TokenType::If => self.parse_if_expression(),                              // IF
+            TokenType::Function => self.parse_function_literal(),                     // FUNCTION
+            TokenType::LBracket => self.parse_array_literal(),                        // LBRACKET
+            TokenType::LBrace => self.parse_hash_literal(),                           // LBRACE
+            TokenType::For => {
+                if !self.expect_peak(TokenType::LParan) {
+                    return None;
+                }
                 self.next_token(); // cur = first token inside '('
                 if matches!(self.cur_token.token_type, TokenType::Let | TokenType::Const) {
                     self.parse_for_expression()
                 } else {
                     self.parse_for_in_expression()
                 }
-            },          // FOR
-            TokenType::While         => self.parse_while_expression(),        // WHILE
+            } // FOR
+            TokenType::While => self.parse_while_expression(),                        // WHILE
             TokenType::Switch => self.parse_switch_expression(),
             TokenType::Typeof => self.parse_typeof_expression(),
             TokenType::Null => {
                 let line = self.cur_token.line;
                 let column = self.cur_token.column;
                 // 'null' is 4 chars
-                Some(Expression::Null { line, column, end_line: line, end_column: column + 4 })
-            },
+                Some(Expression::Null {
+                    line,
+                    column,
+                    end_line: line,
+                    end_column: column + 4,
+                })
+            }
             _ => {
                 if self.cur_token_is(&TokenType::EOF) {
                     self.errors.push(ParseError {
@@ -488,13 +551,19 @@ impl Parser {
         let column = self.cur_token.column;
 
         // switch (subject) { arms }
-        if !self.expect_peak(TokenType::LParan) { return None; }
+        if !self.expect_peak(TokenType::LParan) {
+            return None;
+        }
         self.next_token(); // cur = subject expression start
 
         let subject = self.parse_expression(Precedences::Lowest)?;
 
-        if !self.expect_peak(TokenType::RParen) { return None; }
-        if !self.expect_peak(TokenType::LBrace) { return None; }
+        if !self.expect_peak(TokenType::RParen) {
+            return None;
+        }
+        if !self.expect_peak(TokenType::LBrace) {
+            return None;
+        }
 
         let mut arms = Vec::new();
 
@@ -503,7 +572,9 @@ impl Parser {
 
             let pattern = self.parse_expression(Precedences::Lowest)?;
 
-            if !self.expect_peak(TokenType::FatArrow) { return None; }
+            if !self.expect_peak(TokenType::FatArrow) {
+                return None;
+            }
 
             let body = if self.peak_token_is(&TokenType::LBrace) {
                 self.next_token(); // cur = '{'
@@ -511,7 +582,7 @@ impl Parser {
             } else {
                 self.next_token(); // cur = expression start
                 let body_line = self.cur_token.line;
-                let body_col  = self.cur_token.column;
+                let body_col = self.cur_token.column;
                 let expr = self.parse_expression(Precedences::Lowest)?;
                 // cur_token is last token of expr
                 Statement::Expression {
@@ -523,20 +594,34 @@ impl Parser {
                 }
             };
 
-            arms.push(SwitchArm { pattern, body: Box::new(body) });
+            arms.push(SwitchArm {
+                pattern,
+                body: Box::new(body),
+            });
 
-            if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            if self.peak_token_is(&TokenType::Comma) {
+                self.next_token();
+            }
         }
 
-        if !self.expect_peak(TokenType::RBrace) { return None; }
+        if !self.expect_peak(TokenType::RBrace) {
+            return None;
+        }
 
         // cur_token is '}'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Switch { subject: Box::new(subject), arms, line, column, end_line, end_column })
+        Some(Expression::Switch {
+            subject: Box::new(subject),
+            arms,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
-    fn parse_for_in_expression(&mut self) -> Option<Expression>{
+    fn parse_for_in_expression(&mut self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
@@ -548,7 +633,10 @@ impl Parser {
                         expected: TokenType::Ident(String::new()),
                         got: self.cur_token.clone(),
                     },
-                    message: format!("expected loop variable name, got {:?}", self.cur_token.token_type),
+                    message: format!(
+                        "expected loop variable name, got {:?}",
+                        self.cur_token.token_type
+                    ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
                 });
@@ -568,7 +656,10 @@ impl Parser {
                             expected: TokenType::Ident(String::new()),
                             got: self.cur_token.clone(),
                         },
-                        message: format!("expected second loop variable name, got {:?}", self.cur_token.token_type),
+                        message: format!(
+                            "expected second loop variable name, got {:?}",
+                            self.cur_token.token_type
+                        ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
                     });
@@ -608,7 +699,7 @@ impl Parser {
         })
     }
 
-    fn parse_array_literal(&mut self) -> Option<Expression>{
+    fn parse_array_literal(&mut self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
@@ -617,7 +708,13 @@ impl Parser {
         // cur_token is ']' after parse_expression_list
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Array { element, line, column, end_line, end_column })
+        Some(Expression::Array {
+            element,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_hash_literal(&mut self) -> Option<Expression> {
@@ -640,18 +737,24 @@ impl Parser {
             pairs.push((key, value));
 
             if !self.peak_token_is(&TokenType::RBrace) && !self.expect_peak(TokenType::Comma) {
-                return None
+                return None;
             }
         }
 
         if !self.expect_peak(TokenType::RBrace) {
-            return None
+            return None;
         }
 
         // cur_token is '}'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::HashLiteral { pair: pairs, line, column, end_line, end_column })
+        Some(Expression::HashLiteral {
+            pair: pairs,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
@@ -660,8 +763,8 @@ impl Parser {
 
         let exp = self.parse_function_parameter()?;
 
-        if !self.expect_peak(TokenType::LBrace){
-            return None
+        if !self.expect_peak(TokenType::LBrace) {
+            return None;
         }
 
         let body = self.parse_block_statement()?;
@@ -701,7 +804,10 @@ impl Parser {
                         expected: TokenType::Ident(String::new()),
                         got: self.cur_token.clone(),
                     },
-                    message: format!("expected parameter name, got {:?}", self.cur_token.token_type),
+                    message: format!(
+                        "expected parameter name, got {:?}",
+                        self.cur_token.token_type
+                    ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
                 });
@@ -709,9 +815,12 @@ impl Parser {
             }
         };
         let default = if self.peak_token_is(&TokenType::Assign) {
-            self.next_token(); self.next_token();
+            self.next_token();
+            self.next_token();
             Some(Box::new(self.parse_expression(Precedences::Lowest)?))
-        } else { None };
+        } else {
+            None
+        };
         list.push(Param { name, default });
 
         while self.peak_token_is(&TokenType::Comma) {
@@ -725,7 +834,10 @@ impl Parser {
                             expected: TokenType::Ident(String::new()),
                             got: self.cur_token.clone(),
                         },
-                        message: format!("expected parameter name, got {:?}", self.cur_token.token_type),
+                        message: format!(
+                            "expected parameter name, got {:?}",
+                            self.cur_token.token_type
+                        ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
                     });
@@ -733,9 +845,12 @@ impl Parser {
                 }
             };
             let default = if self.peak_token_is(&TokenType::Assign) {
-                self.next_token(); self.next_token();
+                self.next_token();
+                self.next_token();
                 Some(Box::new(self.parse_expression(Precedences::Lowest)?))
-            } else { None };
+            } else {
+                None
+            };
             list.push(Param { name, default });
         }
 
@@ -754,7 +869,13 @@ impl Parser {
         // cur_token is last token of value expression
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Typeof { value: Box::new(value), line, column, end_line, end_column })
+        Some(Expression::Typeof {
+            value: Box::new(value),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_null_coalesce_expression(&mut self, left: Expression) -> Option<Expression> {
@@ -765,22 +886,35 @@ impl Parser {
         // cur_token is last token of right expression
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::NullCoalesce { left: Box::new(left), right: Box::new(right), line, column, end_line, end_column })
+        Some(Expression::NullCoalesce {
+            left: Box::new(left),
+            right: Box::new(right),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
-    fn parse_char_literal(&self) -> Option<Expression>{
+    fn parse_char_literal(&self) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
         let value = match self.cur_token.token_type.clone() {
-            TokenType::Char(value) => value.clone(),
-            _ => return None
+            TokenType::Char(value) => value,
+            _ => return None,
         };
 
         // char literals are written as 'x' = 3 chars
         let end_line = line;
         let end_column = column + 3;
-        Some(Expression::Char { value, line, column, end_line, end_column })
+        Some(Expression::Char {
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_string_literal(&mut self) -> Option<Expression> {
@@ -818,7 +952,13 @@ impl Parser {
         // string end is approximate; raw lexeme length not stored
         let end_line = line;
         let end_column = column + 1;
-        Some(Expression::InterpolatedString { parts: segments, line, column, end_line, end_column })
+        Some(Expression::InterpolatedString {
+            parts: segments,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_identifier(&self) -> Option<Expression> {
@@ -827,13 +967,19 @@ impl Parser {
 
         let value = match self.cur_token.token_type.clone() {
             TokenType::Ident(value) => value.clone(),
-            _ => return None
+            _ => return None,
         };
 
         let end_line = line;
         let end_column = column + value.len();
 
-        Some(Expression::Ident { value, line, column, end_column, end_line })
+        Some(Expression::Ident {
+            value,
+            line,
+            column,
+            end_column,
+            end_line,
+        })
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {
@@ -915,8 +1061,18 @@ impl Parser {
         let column = self.cur_token.column;
         // 'true' = 4 chars, 'false' = 5 chars
         let end_line = line;
-        let end_column = if self.cur_token_is(&TokenType::True) { column + 4 } else { column + 5 };
-        Some(Expression::Boolean { value: self.cur_token_is(&TokenType::True), line, column, end_line, end_column })
+        let end_column = if self.cur_token_is(&TokenType::True) {
+            column + 4
+        } else {
+            column + 5
+        };
+        Some(Expression::Boolean {
+            value: self.cur_token_is(&TokenType::True),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_infix(&mut self, left: Expression) -> Option<Expression> {
@@ -959,7 +1115,7 @@ impl Parser {
         // property ends at column + length of its name
         let prop_end_col = self.cur_token.column + value.len();
         let prop_line = self.cur_token.line;
-        let prop_col  = self.cur_token.column;
+        let prop_col = self.cur_token.column;
         let property = Expression::Ident {
             value,
             line: prop_line,
@@ -980,21 +1136,28 @@ impl Parser {
         })
     }
 
-    fn parse_index_expression(&mut self, left: Expression) -> Option<Expression>{
+    fn parse_index_expression(&mut self, left: Expression) -> Option<Expression> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
         self.next_token();
         let index = self.parse_expression(Precedences::Lowest)?;
 
-        if !self.expect_peak(TokenType::RBracket){
+        if !self.expect_peak(TokenType::RBracket) {
             return None;
         }
 
         // cur_token is ']'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Index { left: Box::from(left), index: Box::from(index), line, column, end_line, end_column })
+        Some(Expression::Index {
+            left: Box::from(left),
+            index: Box::from(index),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_call_expression(&mut self, left: Expression) -> Option<Expression> {
@@ -1006,7 +1169,14 @@ impl Parser {
         // cur_token is ')' after parse_expression_list
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::Call { function: Box::from(left), argument: arguments, line, column, end_line, end_column })
+        Some(Expression::Call {
+            function: Box::from(left),
+            argument: arguments,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_expression_list(&mut self, end: TokenType) -> Option<Vec<Expression>> {
@@ -1026,8 +1196,8 @@ impl Parser {
             list.push(self.parse_expression(Precedences::Lowest)?);
         }
 
-        if !self.expect_peak(end){
-            return None
+        if !self.expect_peak(end) {
+            return None;
         }
 
         Some(list)
@@ -1035,7 +1205,7 @@ impl Parser {
 
     fn parse_statement(&mut self) -> Option<Statement> {
         let result = match self.cur_token.token_type {
-            TokenType::Let    => self.parse_let_statement(),
+            TokenType::Let => self.parse_let_statement(),
             TokenType::Return => self.parse_return_statement(),
             TokenType::Import => self.parse_import_statement(),
             TokenType::Struct => self.parse_struct_statement(),
@@ -1044,7 +1214,7 @@ impl Parser {
             TokenType::Const => self.parse_const_statement(),
             TokenType::Enum => self.parse_enum_statement(),
             TokenType::Pub => self.parse_pub_statement(),
-            _                 => self.parse_expression_statement(),
+            _ => self.parse_expression_statement(),
         };
 
         if result.is_none() {
@@ -1054,19 +1224,23 @@ impl Parser {
         result
     }
 
-
     fn parse_pub_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
         self.next_token();
-        let inner = match self.cur_token.token_type.clone(){
+        let inner = match self.cur_token.token_type.clone() {
             TokenType::Let => self.parse_let_statement()?,
             TokenType::Const => self.parse_const_statement()?,
             _ => {
                 self.errors.push(ParseError {
-                    kind: ParseErrorKind::IllegalKeyword { keyword: self.cur_token.clone() },
-                    message: format!("'pub' can only precede 'let' or 'const', got {:?}", self.cur_token.token_type),
+                    kind: ParseErrorKind::IllegalKeyword {
+                        keyword: self.cur_token.clone(),
+                    },
+                    message: format!(
+                        "'pub' can only precede 'let' or 'const', got {:?}",
+                        self.cur_token.token_type
+                    ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
                 });
@@ -1077,10 +1251,16 @@ impl Parser {
         // cur_token is wherever the inner statement left it
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Pub { statement: Box::new(inner), line, column, end_line, end_column })
+        Some(Statement::Pub {
+            statement: Box::new(inner),
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
-    fn parse_enum_statement(&mut self) -> Option<Statement>{
+    fn parse_enum_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
         self.next_token();
@@ -1100,7 +1280,7 @@ impl Parser {
             }
         };
 
-        if !self.expect_peak(TokenType::LBrace){
+        if !self.expect_peak(TokenType::LBrace) {
             return None;
         };
 
@@ -1115,7 +1295,10 @@ impl Parser {
                             expected: TokenType::Ident(String::new()),
                             got: self.cur_token.clone(),
                         },
-                        message: format!("expected enum variant name, got {:?}", self.cur_token.token_type),
+                        message: format!(
+                            "expected enum variant name, got {:?}",
+                            self.cur_token.token_type
+                        ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
                     });
@@ -1123,16 +1306,29 @@ impl Parser {
                 }
             };
             variants.push(variant);
-            if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+            if self.peak_token_is(&TokenType::Comma) {
+                self.next_token();
+            }
         }
 
-        if !self.expect_peak(TokenType::RBrace) { return None; }
-        if !self.expect_peak(TokenType::Semicolon) { return None; }
+        if !self.expect_peak(TokenType::RBrace) {
+            return None;
+        }
+        if !self.expect_peak(TokenType::Semicolon) {
+            return None;
+        }
 
         // cur_token is ';'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Enum { name, variant: variants, line, column, end_line, end_column })
+        Some(Statement::Enum {
+            name,
+            variant: variants,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_continue_statement(&mut self) -> Option<Statement> {
@@ -1142,7 +1338,12 @@ impl Parser {
         // cur_token is ';' if found, otherwise 'continue'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Continue { line, column, end_line, end_column })
+        Some(Statement::Continue {
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_break_statement(&mut self) -> Option<Statement> {
@@ -1152,7 +1353,12 @@ impl Parser {
         // cur_token is ';' if found, otherwise 'break'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Break { line, column, end_line, end_column })
+        Some(Statement::Break {
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_struct_statement(&mut self) -> Option<Statement> {
@@ -1169,7 +1375,7 @@ impl Parser {
         };
         let iden_end_col = self.cur_token.column + name.len();
         let iden_line = self.cur_token.line;
-        let iden_col  = self.cur_token.column;
+        let iden_col = self.cur_token.column;
         let iden = Expression::Ident {
             value: name,
             line: iden_line,
@@ -1195,7 +1401,10 @@ impl Parser {
                             expected: TokenType::Ident(String::new()),
                             got: self.cur_token.clone(),
                         },
-                        message: format!("expected struct field name, got {:?}", self.cur_token.token_type),
+                        message: format!(
+                            "expected struct field name, got {:?}",
+                            self.cur_token.token_type
+                        ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
                     });
@@ -1228,7 +1437,14 @@ impl Parser {
         // cur_token is ';'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Struct { name: Box::new(iden), field, line, column, end_line, end_column })
+        Some(Statement::Struct {
+            name: Box::new(iden),
+            field,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_import_statement(&mut self) -> Option<Statement> {
@@ -1247,7 +1463,8 @@ impl Parser {
                 _ => {
                     self.errors.push(ParseError {
                         kind: ParseErrorKind::InvalidLiteral {
-                            raw: "import path must be a plain string with no interpolation".to_string(),
+                            raw: "import path must be a plain string with no interpolation"
+                                .to_string(),
                         },
                         message: "import path must be a plain string".to_string(),
                         line: self.cur_token.line,
@@ -1266,7 +1483,13 @@ impl Parser {
         // cur_token is ';'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Import { path, line, column, end_line, end_column })
+        Some(Statement::Import {
+            path,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_let_statement(&mut self) -> Option<Statement> {
@@ -1286,7 +1509,10 @@ impl Parser {
                                 expected: TokenType::Ident(String::new()),
                                 got: self.cur_token.clone(),
                             },
-                            message: format!("expected identifier in array destructuring pattern, got {:?}", self.cur_token.token_type),
+                            message: format!(
+                                "expected identifier in array destructuring pattern, got {:?}",
+                                self.cur_token.token_type
+                            ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
                         });
@@ -1294,9 +1520,13 @@ impl Parser {
                     }
                 };
                 names.push(name);
-                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+                if self.peak_token_is(&TokenType::Comma) {
+                    self.next_token();
+                }
             }
-            if !self.expect_peak(TokenType::RBracket) { return None; }
+            if !self.expect_peak(TokenType::RBracket) {
+                return None;
+            }
             LetPattern::Array(names)
         } else if self.peak_token_is(&TokenType::LBrace) {
             self.next_token();
@@ -1311,7 +1541,10 @@ impl Parser {
                                 expected: TokenType::Ident(String::new()),
                                 got: self.cur_token.clone(),
                             },
-                            message: format!("expected identifier in hash destructuring pattern, got {:?}", self.cur_token.token_type),
+                            message: format!(
+                                "expected identifier in hash destructuring pattern, got {:?}",
+                                self.cur_token.token_type
+                            ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
                         });
@@ -1319,7 +1552,8 @@ impl Parser {
                     }
                 };
                 let alias = if self.peak_token_is(&TokenType::Colon) {
-                    self.next_token(); self.next_token();
+                    self.next_token();
+                    self.next_token();
                     match self.cur_token.token_type.clone() {
                         TokenType::Ident(v) => v,
                         _ => {
@@ -1328,21 +1562,32 @@ impl Parser {
                                     expected: TokenType::Ident(String::new()),
                                     got: self.cur_token.clone(),
                                 },
-                                message: format!("expected identifier for destructuring alias, got {:?}", self.cur_token.token_type),
+                                message: format!(
+                                    "expected identifier for destructuring alias, got {:?}",
+                                    self.cur_token.token_type
+                                ),
                                 line: self.cur_token.line,
                                 column: self.cur_token.column,
                             });
                             return None;
                         }
                     }
-                } else { key.clone() };
+                } else {
+                    key.clone()
+                };
                 pairs.push((key, alias));
-                if self.peak_token_is(&TokenType::Comma) { self.next_token(); }
+                if self.peak_token_is(&TokenType::Comma) {
+                    self.next_token();
+                }
             }
-            if !self.expect_peak(TokenType::RBrace) { return None; }
+            if !self.expect_peak(TokenType::RBrace) {
+                return None;
+            }
             LetPattern::Hash(pairs)
         } else {
-            if !self.expect_peak_ident() { return None; }
+            if !self.expect_peak_ident() {
+                return None;
+            }
             let name = match self.cur_token.token_type.clone() {
                 TokenType::Ident(n) => n,
                 _ => return None,
@@ -1350,27 +1595,41 @@ impl Parser {
             LetPattern::Ident(name)
         };
 
-        let value = if self.peak_token_is(&TokenType::Semicolon) || self.peak_token_is(&TokenType::EOF) {
-            if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
-            // uninitialized let — null spans the semicolon position
-            Expression::Null {
-                line: self.cur_token.line,
-                column: self.cur_token.column,
-                end_line: self.cur_token.line,
-                end_column: self.cur_token.column + 1,
-            }
-        } else {
-            if !self.expect_peak(TokenType::Assign) { return None; }
-            self.next_token();
-            let v = self.parse_expression(Precedences::Lowest)?;
-            if self.peak_token_is(&TokenType::Semicolon) { self.next_token(); }
-            v
-        };
+        let value =
+            if self.peak_token_is(&TokenType::Semicolon) || self.peak_token_is(&TokenType::EOF) {
+                if self.peak_token_is(&TokenType::Semicolon) {
+                    self.next_token();
+                }
+                // uninitialized let — null spans the semicolon position
+                Expression::Null {
+                    line: self.cur_token.line,
+                    column: self.cur_token.column,
+                    end_line: self.cur_token.line,
+                    end_column: self.cur_token.column + 1,
+                }
+            } else {
+                if !self.expect_peak(TokenType::Assign) {
+                    return None;
+                }
+                self.next_token();
+                let v = self.parse_expression(Precedences::Lowest)?;
+                if self.peak_token_is(&TokenType::Semicolon) {
+                    self.next_token();
+                }
+                v
+            };
 
         // cur_token is ';' or last token of value
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Let { pattern, value, line, column, end_line, end_column })
+        Some(Statement::Let {
+            pattern,
+            value,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_expression(&mut self, precedences: Precedences) -> Option<Expression> {
@@ -1385,34 +1644,43 @@ impl Parser {
         }
 
         // struct literal: only fire after full Pratt parse, and only for bare idents
-        if self.peak_token_is(&TokenType::LBrace) {
-            if matches!(left_exp, Expression::Ident { .. }) {
-                return self.parse_struct_literal(left_exp);
-            }
+        if self.peak_token_is(&TokenType::LBrace) && matches!(left_exp, Expression::Ident { .. }) {
+            return self.parse_struct_literal(left_exp);
         }
 
         Some(left_exp)
     }
 
-    fn parse_expression_statement(&mut self) -> Option<Statement>{
+    fn parse_expression_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
 
         let expr = self.parse_expression(Precedences::Lowest)?;
 
-        if !self.expect_peak(TokenType::Semicolon){
-            return None
+        if !self.expect_peak(TokenType::Semicolon) {
+            return None;
         };
 
         // cur_token is ';'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Statement::Expression { expr, line, column, end_line, end_column })
+        Some(Statement::Expression {
+            expr,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn parse_struct_literal(&mut self, left: Expression) -> Option<Expression> {
         let (ident_name, line, column) = match left {
-            Expression::Ident { value, line, column, .. } => (value, line, column),
+            Expression::Ident {
+                value,
+                line,
+                column,
+                ..
+            } => (value, line, column),
             _ => return None,
         };
 
@@ -1433,7 +1701,10 @@ impl Parser {
                             expected: TokenType::Ident(String::new()),
                             got: self.cur_token.clone(),
                         },
-                        message: format!("expected struct field name, got {:?}", self.cur_token.token_type),
+                        message: format!(
+                            "expected struct field name, got {:?}",
+                            self.cur_token.token_type
+                        ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
                     });
@@ -1461,21 +1732,46 @@ impl Parser {
         // cur_token is '}'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
-        Some(Expression::StructLiteral { name: ident_name, fields, line, column, end_line, end_column })
+        Some(Expression::StructLiteral {
+            name: ident_name,
+            fields,
+            line,
+            column,
+            end_line,
+            end_column,
+        })
     }
 
     fn has_infix(&self, tok: &TokenType) -> bool {
         matches!(
             tok,
-            TokenType::Plus | TokenType::Minus | TokenType::SLASH | TokenType::Asterisk
-            | TokenType::Rem | TokenType::Square | TokenType::Floor
-            | TokenType::EQ | TokenType::NOTEQ | TokenType::LT | TokenType::GT
-            | TokenType::GreaterThanEqual | TokenType::LessThanEqual
-            | TokenType::And | TokenType::Or | TokenType::Assign
-            | TokenType::AddAssign | TokenType::SubAssign | TokenType::MulAssign
-            | TokenType::QuoAssign | TokenType::RemAssign
-            | TokenType::LParan | TokenType::LBracket | TokenType::Dot
-            | TokenType::Inc | TokenType::Dec | TokenType::NullCoalesce
+            TokenType::Plus
+                | TokenType::Minus
+                | TokenType::SLASH
+                | TokenType::Asterisk
+                | TokenType::Rem
+                | TokenType::Square
+                | TokenType::Floor
+                | TokenType::EQ
+                | TokenType::NOTEQ
+                | TokenType::LT
+                | TokenType::GT
+                | TokenType::GreaterThanEqual
+                | TokenType::LessThanEqual
+                | TokenType::And
+                | TokenType::Or
+                | TokenType::Assign
+                | TokenType::AddAssign
+                | TokenType::SubAssign
+                | TokenType::MulAssign
+                | TokenType::QuoAssign
+                | TokenType::RemAssign
+                | TokenType::LParan
+                | TokenType::LBracket
+                | TokenType::Dot
+                | TokenType::Inc
+                | TokenType::Dec
+                | TokenType::NullCoalesce
         )
     }
 
@@ -1509,21 +1805,30 @@ impl Parser {
 
     fn peak_error(&mut self, expected: TokenType) {
         self.errors.push(ParseError {
-            kind: ParseErrorKind::UnexpectedToken { expected:expected.clone(), got: self.peak_token.clone() },
-            message: format!("expected {:?}, got {:?}", expected.clone(), self.peak_token.token_type),
+            kind: ParseErrorKind::UnexpectedToken {
+                expected: expected.clone(),
+                got: self.peak_token.clone(),
+            },
+            message: format!(
+                "expected {:?}, got {:?}",
+                expected.clone(),
+                self.peak_token.token_type
+            ),
             line: self.peak_token.line,
             column: self.peak_token.column,
         });
     }
 
     pub fn parse_program(&mut self) -> Program {
-        let mut program = Program { statements: Vec::new() };
+        let mut program = Program {
+            statements: Vec::new(),
+        };
 
         while self.cur_token.token_type != TokenType::EOF {
-           if let Some(stmt) = self.parse_statement(){
-               program.statements.push(stmt);
-           }
-           self.next_token();
+            if let Some(stmt) = self.parse_statement() {
+                program.statements.push(stmt);
+            }
+            self.next_token();
         }
 
         program
@@ -1535,7 +1840,6 @@ impl Parser {
 
         loop {
             match self.cur_token.token_type {
-
                 // a semicolon ends the broken statement —
                 // consume it and return so the caller can try the next one
                 TokenType::Semicolon => {
@@ -1567,13 +1871,20 @@ impl Parser {
         }
     }
 
-
-    pub fn new(l: Lexer) -> Self{
+    pub fn new(l: Lexer) -> Self {
         let mut p = Self {
             l,
             errors: Vec::new(),
-            cur_token: Token { token_type: TokenType::EOF, line: 0, column: 0 },
-            peak_token: Token { token_type: TokenType::EOF, line: 0, column: 0 }
+            cur_token: Token {
+                token_type: TokenType::EOF,
+                line: 0,
+                column: 0,
+            },
+            peak_token: Token {
+                token_type: TokenType::EOF,
+                line: 0,
+                column: 0,
+            },
         };
 
         p.next_token();

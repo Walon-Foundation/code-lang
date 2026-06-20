@@ -1,34 +1,71 @@
 use std::collections::HashMap;
 
 use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, CONTENT_TYPE};
+use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 
 use crate::object::object::{CallInfo, Object};
 
 fn make_response(status: u16, body: String) -> Object {
     Object::Hash(vec![
-        (Object::StringType("status".to_string()), Object::Integer(status as i64)),
-        (Object::StringType("body".to_string()),   Object::StringType(body)),
-        (Object::StringType("ok".to_string()),     Object::Bool(status >= 200 && status < 300)),
+        (
+            Object::StringType("status".to_string()),
+            Object::Integer(status as i64),
+        ),
+        (
+            Object::StringType("body".to_string()),
+            Object::StringType(body),
+        ),
+        (
+            Object::StringType("ok".to_string()),
+            Object::Bool((200..300).contains(&status)),
+        ),
     ])
 }
 
 fn extract_headers(obj: &Object, info: &CallInfo) -> Result<HeaderMap, Object> {
     let pairs = match obj {
         Object::Hash(p) => p,
-        _ => return Err(Object::Error { message: format!("headers must be HASH, got {}", obj.type_name()), line: info.line, column: info.column }),
+        _ => {
+            return Err(Object::Error {
+                message: format!("headers must be HASH, got {}", obj.type_name()),
+                line: info.line,
+                column: info.column,
+            });
+        }
     };
     let mut map = HeaderMap::new();
     for (k, v) in pairs {
         let key = match k {
-            Object::StringType(s) => s.as_str().parse::<HeaderName>()
-                .map_err(|e| Object::Error { message: format!("invalid header name: {}", e), line: info.line, column: info.column })?,
-            _ => return Err(Object::Error { message: "header keys must be STRING".to_string(), line: info.line, column: info.column }),
+            Object::StringType(s) => {
+                s.as_str()
+                    .parse::<HeaderName>()
+                    .map_err(|e| Object::Error {
+                        message: format!("invalid header name: {}", e),
+                        line: info.line,
+                        column: info.column,
+                    })?
+            }
+            _ => {
+                return Err(Object::Error {
+                    message: "header keys must be STRING".to_string(),
+                    line: info.line,
+                    column: info.column,
+                });
+            }
         };
         let val = match v {
-            Object::StringType(s) => HeaderValue::from_str(s)
-                .map_err(|e| Object::Error { message: format!("invalid header value: {}", e), line: info.line, column: info.column })?,
-            _ => return Err(Object::Error { message: "header values must be STRING".to_string(), line: info.line, column: info.column }),
+            Object::StringType(s) => HeaderValue::from_str(s).map_err(|e| Object::Error {
+                message: format!("invalid header value: {}", e),
+                line: info.line,
+                column: info.column,
+            })?,
+            _ => {
+                return Err(Object::Error {
+                    message: "header values must be STRING".to_string(),
+                    line: info.line,
+                    column: info.column,
+                });
+            }
         };
         map.insert(key, val);
     }
@@ -37,11 +74,21 @@ fn extract_headers(obj: &Object, info: &CallInfo) -> Result<HeaderMap, Object> {
 
 fn get(args: Vec<Object>, info: CallInfo) -> Object {
     if args.is_empty() || args.len() > 2 {
-        return Object::Error { message: "http.get takes 1 or 2 arguments: url, [headers]".to_string(), line: info.line, column: info.column };
+        return Object::Error {
+            message: "http.get takes 1 or 2 arguments: url, [headers]".to_string(),
+            line: info.line,
+            column: info.column,
+        };
     }
     let url = match &args[0] {
         Object::StringType(s) => s.clone(),
-        _ => return Object::Error { message: format!("http.get expects STRING url, got {}", args[0].type_name()), line: info.line, column: info.column },
+        _ => {
+            return Object::Error {
+                message: format!("http.get expects STRING url, got {}", args[0].type_name()),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     let client = Client::new();
     let mut req = client.get(&url);
@@ -57,21 +104,41 @@ fn get(args: Vec<Object>, info: CallInfo) -> Object {
             let body = resp.text().unwrap_or_default();
             make_response(status, body)
         }
-        Err(e) => Object::Error { message: format!("http.get: {}", e), line: info.line, column: info.column },
+        Err(e) => Object::Error {
+            message: format!("http.get: {}", e),
+            line: info.line,
+            column: info.column,
+        },
     }
 }
 
 fn post(args: Vec<Object>, info: CallInfo) -> Object {
     if args.len() < 2 || args.len() > 3 {
-        return Object::Error { message: "http.post takes 2 or 3 arguments: url, body, [headers]".to_string(), line: info.line, column: info.column };
+        return Object::Error {
+            message: "http.post takes 2 or 3 arguments: url, body, [headers]".to_string(),
+            line: info.line,
+            column: info.column,
+        };
     }
     let url = match &args[0] {
         Object::StringType(s) => s.clone(),
-        _ => return Object::Error { message: format!("http.post expects STRING url, got {}", args[0].type_name()), line: info.line, column: info.column },
+        _ => {
+            return Object::Error {
+                message: format!("http.post expects STRING url, got {}", args[0].type_name()),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     let body = match &args[1] {
         Object::StringType(s) => s.clone(),
-        _ => return Object::Error { message: format!("http.post expects STRING body, got {}", args[1].type_name()), line: info.line, column: info.column },
+        _ => {
+            return Object::Error {
+                message: format!("http.post expects STRING body, got {}", args[1].type_name()),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     let client = Client::new();
     let mut req = client.post(&url).body(body);
@@ -87,24 +154,48 @@ fn post(args: Vec<Object>, info: CallInfo) -> Object {
             let body = resp.text().unwrap_or_default();
             make_response(status, body)
         }
-        Err(e) => Object::Error { message: format!("http.post: {}", e), line: info.line, column: info.column },
+        Err(e) => Object::Error {
+            message: format!("http.post: {}", e),
+            line: info.line,
+            column: info.column,
+        },
     }
 }
 
 fn post_json(args: Vec<Object>, info: CallInfo) -> Object {
     if args.len() < 2 || args.len() > 3 {
-        return Object::Error { message: "http.post_json takes 2 or 3 arguments: url, body_hash, [headers]".to_string(), line: info.line, column: info.column };
+        return Object::Error {
+            message: "http.post_json takes 2 or 3 arguments: url, body_hash, [headers]".to_string(),
+            line: info.line,
+            column: info.column,
+        };
     }
     let url = match &args[0] {
         Object::StringType(s) => s.clone(),
-        _ => return Object::Error { message: format!("http.post_json expects STRING url, got {}", args[0].type_name()), line: info.line, column: info.column },
+        _ => {
+            return Object::Error {
+                message: format!(
+                    "http.post_json expects STRING url, got {}",
+                    args[0].type_name()
+                ),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     let json_str = match object_to_json_string(&args[1]) {
         Ok(s) => s,
-        Err(e) => return Object::Error { message: format!("http.post_json: {}", e), line: info.line, column: info.column },
+        Err(e) => {
+            return Object::Error {
+                message: format!("http.post_json: {}", e),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     let client = Client::new();
-    let mut req = client.post(&url)
+    let mut req = client
+        .post(&url)
         .header(CONTENT_TYPE, "application/json")
         .body(json_str);
     if args.len() == 3 {
@@ -119,7 +210,11 @@ fn post_json(args: Vec<Object>, info: CallInfo) -> Object {
             let body = resp.text().unwrap_or_default();
             make_response(status, body)
         }
-        Err(e) => Object::Error { message: format!("http.post_json: {}", e), line: info.line, column: info.column },
+        Err(e) => Object::Error {
+            message: format!("http.post_json: {}", e),
+            line: info.line,
+            column: info.column,
+        },
     }
 }
 
@@ -159,8 +254,12 @@ fn object_to_serde(obj: &Object) -> Result<serde_json::Value, String> {
 
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
-    members.insert("get".to_string(),       Object::Builtin(get));
-    members.insert("post".to_string(),      Object::Builtin(post));
+    members.insert("get".to_string(), Object::Builtin(get));
+    members.insert("post".to_string(), Object::Builtin(post));
     members.insert("post_json".to_string(), Object::Builtin(post_json));
-    Object::Module { name: "http".to_string(), pub_gated: false, members }
+    Object::Module {
+        name: "http".to_string(),
+        pub_gated: false,
+        members,
+    }
 }

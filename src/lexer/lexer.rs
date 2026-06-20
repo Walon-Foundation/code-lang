@@ -1,27 +1,26 @@
-use crate::token::token::{ StringPart, Token, TokenType, lookup_ident};
-
+use crate::token::token::{StringPart, Token, TokenType, lookup_ident};
 
 #[derive(Debug)]
 pub struct Lexer {
-    pub input:Vec<char>,
-    pub position:usize,
-    pub read_position:usize,
-    pub ch:char,
-    pub line:usize,
-    pub column:usize,
+    pub input: Vec<char>,
+    pub position: usize,
+    pub read_position: usize,
+    pub ch: char,
+    pub line: usize,
+    pub column: usize,
 }
 
 impl Lexer {
-    fn read_char(&mut self){
+    fn read_char(&mut self) {
         if self.read_position >= self.input.len() {
             self.ch = '\0';
             self.column += 1;
-        }else {
+        } else {
             self.ch = self.input[self.read_position];
-            if self.ch == '\n'{
+            if self.ch == '\n' {
                 self.line += 1;
                 self.column = 0;
-            }else {
+            } else {
                 self.column += 1;
             }
         }
@@ -30,7 +29,7 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    fn skip_whitespace(&mut self){
+    fn skip_whitespace(&mut self) {
         while self.ch == ' ' || self.ch == '\t' || self.ch == '\n' || self.ch == '\r' {
             self.read_char();
         }
@@ -38,13 +37,13 @@ impl Lexer {
 
     fn peak_char(&self) -> char {
         if self.read_position >= self.input.len() {
-            return '\0'
-        }else {
+            '\0'
+        } else {
             self.input[self.read_position]
         }
     }
 
-    fn skip_single_line_comment(&mut self){
+    fn skip_single_line_comment(&mut self) {
         while self.ch != '\n' && self.ch != '\0' {
             self.read_char();
         }
@@ -59,7 +58,7 @@ impl Lexer {
             if self.ch == '*' && self.peak_char() == '/' {
                 self.read_char();
                 self.read_char();
-                break
+                break;
             }
 
             self.read_char();
@@ -87,9 +86,15 @@ impl Lexer {
                 let mut exp_src = String::new();
                 let mut depth = 1;
                 loop {
-                    if self.ch == '{' { depth += 1; }
-                    if self.ch == '}' { depth -= 1; }
-                    if depth == 0 { break; }
+                    if self.ch == '{' {
+                        depth += 1;
+                    }
+                    if self.ch == '}' {
+                        depth -= 1;
+                    }
+                    if depth == 0 {
+                        break;
+                    }
                     exp_src.push(self.ch);
                     self.read_char();
                 }
@@ -110,7 +115,7 @@ impl Lexer {
     fn read_char_type(&mut self) -> TokenType {
         self.read_char();
         if self.ch == '\0' || self.ch == '\'' {
-            return TokenType::ILLEGAL
+            return TokenType::ILLEGAL;
         }
 
         let value = self.ch;
@@ -118,7 +123,7 @@ impl Lexer {
 
         if self.ch != '\'' {
             self.read_char();
-            return TokenType::ILLEGAL
+            return TokenType::ILLEGAL;
         }
 
         TokenType::Char(value)
@@ -130,7 +135,7 @@ impl Lexer {
 
         while is_digit(self.ch) {
             self.read_char();
-        };
+        }
 
         self.input[position..self.position]
             .iter()
@@ -143,7 +148,7 @@ impl Lexer {
     fn read_identifier(&mut self) -> String {
         let position = self.position;
 
-        while is_letter(self.ch) || is_digit(self.ch){
+        while is_letter(self.ch) || is_digit(self.ch) {
             self.read_char();
         }
 
@@ -152,41 +157,53 @@ impl Lexer {
 
     fn read_number(&mut self) -> String {
         let position = self.position;
-        
-    	while is_digit(self.ch) {
-    		self.read_char()
-    	}
-        
-    	if self.ch == '.' {
-    		self.read_char();
-    		while is_digit(self.ch) {
-    			self.read_char()
-    		}
-    	}
-        
-    	self.input[position..self.position].iter().collect()
+
+        while is_digit(self.ch) {
+            self.read_char()
+        }
+
+        if self.ch == '.' {
+            self.read_char();
+            while is_digit(self.ch) {
+                self.read_char()
+            }
+        }
+
+        self.input[position..self.position].iter().collect()
     }
 
-    pub fn next_token(&mut self) -> Token{
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
         let current_line = self.line;
         let current_column = self.column;
 
-        let mut token = Token { token_type: TokenType::ILLEGAL, line: current_line, column: current_column };
+        let mut token = Token {
+            token_type: TokenType::ILLEGAL,
+            line: current_line,
+            column: current_column,
+        };
 
         match self.ch {
             '=' => {
                 if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::EQ, line: current_line, column: current_column };
-                }else if self.peak_char() == '>' {
+                    token = Token {
+                        token_type: TokenType::EQ,
+                        line: current_line,
+                        column: current_column,
+                    };
+                } else if self.peak_char() == '>' {
                     self.read_char();
-                    token = Token { token_type: TokenType::FatArrow, line: current_line, column: current_column }
+                    token = Token {
+                        token_type: TokenType::FatArrow,
+                        line: current_line,
+                        column: current_column,
+                    }
                 } else {
                     token = new_token(TokenType::Assign, current_line, current_column);
                 }
-            },
+            }
 
             '(' => token = new_token(TokenType::LParan, current_line, current_column),
             ')' => token = new_token(TokenType::RParen, current_line, current_column),
@@ -201,10 +218,18 @@ impl Lexer {
             '+' => {
                 if self.peak_char() == '+' {
                     self.read_char();
-                    token = Token { token_type: TokenType::Inc, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::Inc,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::AddAssign, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::AddAssign,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::Plus, current_line, current_column);
                 }
@@ -213,10 +238,18 @@ impl Lexer {
             '-' => {
                 if self.peak_char() == '-' {
                     self.read_char();
-                    token = Token { token_type: TokenType::Dec, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::Dec,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::SubAssign, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::SubAssign,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::Minus, current_line, current_column);
                 }
@@ -230,7 +263,11 @@ impl Lexer {
             '!' => {
                 if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::NOTEQ, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::NOTEQ,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::Bang, current_line, current_column);
                 }
@@ -239,7 +276,11 @@ impl Lexer {
             '/' => {
                 if self.peak_char() == '/' {
                     self.read_char();
-                    token = Token { token_type: TokenType::Floor, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::Floor,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else if self.peak_char() == '*' {
                     self.read_char();
                     self.read_char();
@@ -247,7 +288,11 @@ impl Lexer {
                     return self.next_token();
                 } else if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::QuoAssign, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::QuoAssign,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::SLASH, current_line, current_column);
                 }
@@ -256,10 +301,18 @@ impl Lexer {
             '*' => {
                 if self.peak_char() == '*' {
                     self.read_char();
-                    token = Token { token_type: TokenType::Square, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::Square,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::MulAssign, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::MulAssign,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::Asterisk, current_line, current_column);
                 }
@@ -268,7 +321,11 @@ impl Lexer {
             '<' => {
                 if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::LessThanEqual, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::LessThanEqual,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::LT, current_line, current_column);
                 }
@@ -277,7 +334,11 @@ impl Lexer {
             '>' => {
                 if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::GreaterThanEqual, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::GreaterThanEqual,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::GT, current_line, current_column);
                 }
@@ -286,7 +347,11 @@ impl Lexer {
             '%' => {
                 if self.peak_char() == '=' {
                     self.read_char();
-                    token = Token { token_type: TokenType::RemAssign, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::RemAssign,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::Rem, current_line, current_column);
                 }
@@ -295,7 +360,11 @@ impl Lexer {
             '|' => {
                 if self.peak_char() == '|' {
                     self.read_char();
-                    token = Token { token_type: TokenType::Or, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::Or,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::ILLEGAL, current_line, current_column);
                 }
@@ -304,7 +373,11 @@ impl Lexer {
             '&' => {
                 if self.peak_char() == '&' {
                     self.read_char();
-                    token = Token { token_type: TokenType::And, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::And,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::ILLEGAL, current_line, current_column);
                 }
@@ -342,7 +415,11 @@ impl Lexer {
             '?' => {
                 if self.peak_char() == '?' {
                     self.read_char();
-                    token = Token { token_type: TokenType::NullCoalesce, line: current_line, column: current_column };
+                    token = Token {
+                        token_type: TokenType::NullCoalesce,
+                        line: current_line,
+                        column: current_column,
+                    };
                 } else {
                     token = new_token(TokenType::ILLEGAL, current_line, current_column);
                 }
@@ -358,11 +435,13 @@ impl Lexer {
                 } else if is_digit(self.ch) {
                     let value = self.read_number();
                     if value.contains('.') {
-                        token.token_type = value.parse::<f64>()
+                        token.token_type = value
+                            .parse::<f64>()
                             .map(TokenType::Float)
                             .unwrap_or(TokenType::ILLEGAL);
                     } else {
-                        token.token_type = value.parse::<isize>()
+                        token.token_type = value
+                            .parse::<isize>()
                             .map(TokenType::Int)
                             .unwrap_or(TokenType::ILLEGAL);
                     }
@@ -379,16 +458,16 @@ impl Lexer {
         token
     }
 
-    pub fn new(input:String) -> Self {
-        let input:Vec<char> = input.chars().collect();
-        
-        let mut  l = Lexer { 
-            input, 
-            position: 0, 
-            read_position: 0, 
-            ch: '\0', 
-            line: 1, 
-            column: 0 
+    pub fn new(input: String) -> Self {
+        let input: Vec<char> = input.chars().collect();
+
+        let mut l = Lexer {
+            input,
+            position: 0,
+            read_position: 0,
+            ch: '\0',
+            line: 1,
+            column: 0,
         };
 
         l.read_char();
@@ -396,22 +475,21 @@ impl Lexer {
     }
 }
 
-fn new_token(token_type:TokenType, line:usize, column:usize) -> Token {
-    Token { 
-        token_type,  
-        line, 
-        column 
+fn new_token(token_type: TokenType, line: usize, column: usize) -> Token {
+    Token {
+        token_type,
+        line,
+        column,
     }
 }
 
-fn is_digit(ch:char) -> bool {
+fn is_digit(ch: char) -> bool {
     ch.is_ascii_digit()
 }
 
 fn is_letter(ch: char) -> bool {
-	ch.is_ascii_alphabetic() || ch == '_'
+    ch.is_ascii_alphabetic() || ch == '_'
 }
-
 
 #[cfg(test)]
 mod test {
@@ -424,7 +502,9 @@ mod test {
             let tok = lexer.next_token();
             let is_eof = tok.token_type == TokenType::EOF;
             tokens.push(tok.token_type);
-            if is_eof { break; }
+            if is_eof {
+                break;
+            }
         }
         tokens
     }
@@ -434,11 +514,16 @@ mod test {
         assert_eq!(
             tokenize("(){}[];,.:"),
             vec![
-                TokenType::LParan, TokenType::RParen,
-                TokenType::LBrace, TokenType::RBrace,
-                TokenType::LBracket, TokenType::RBracket,
-                TokenType::Semicolon, TokenType::Comma,
-                TokenType::Dot, TokenType::Colon,
+                TokenType::LParan,
+                TokenType::RParen,
+                TokenType::LBrace,
+                TokenType::RBrace,
+                TokenType::LBracket,
+                TokenType::RBracket,
+                TokenType::Semicolon,
+                TokenType::Comma,
+                TokenType::Dot,
+                TokenType::Colon,
                 TokenType::EOF,
             ]
         );
@@ -449,9 +534,12 @@ mod test {
         assert_eq!(
             tokenize("+ - * / %"),
             vec![
-                TokenType::Plus, TokenType::Minus,
-                TokenType::Asterisk, TokenType::SLASH,
-                TokenType::Rem, TokenType::EOF,
+                TokenType::Plus,
+                TokenType::Minus,
+                TokenType::Asterisk,
+                TokenType::SLASH,
+                TokenType::Rem,
+                TokenType::EOF,
             ]
         );
     }
@@ -461,10 +549,14 @@ mod test {
         assert_eq!(
             tokenize("++ -- += -= *= /= %="),
             vec![
-                TokenType::Inc, TokenType::Dec,
-                TokenType::AddAssign, TokenType::SubAssign,
-                TokenType::MulAssign, TokenType::QuoAssign,
-                TokenType::RemAssign, TokenType::EOF,
+                TokenType::Inc,
+                TokenType::Dec,
+                TokenType::AddAssign,
+                TokenType::SubAssign,
+                TokenType::MulAssign,
+                TokenType::QuoAssign,
+                TokenType::RemAssign,
+                TokenType::EOF,
             ]
         );
     }
@@ -474,9 +566,12 @@ mod test {
         assert_eq!(
             tokenize("== != < > <= >="),
             vec![
-                TokenType::EQ, TokenType::NOTEQ,
-                TokenType::LT, TokenType::GT,
-                TokenType::LessThanEqual, TokenType::GreaterThanEqual,
+                TokenType::EQ,
+                TokenType::NOTEQ,
+                TokenType::LT,
+                TokenType::GT,
+                TokenType::LessThanEqual,
+                TokenType::GreaterThanEqual,
                 TokenType::EOF,
             ]
         );
@@ -509,14 +604,25 @@ mod test {
     #[test]
     fn test_keywords() {
         assert_eq!(
-            tokenize("fn let const true false if else elseif for while return break continue import struct"),
+            tokenize(
+                "fn let const true false if else elseif for while return break continue import struct"
+            ),
             vec![
-                TokenType::Function, TokenType::Let, TokenType::Const,
-                TokenType::True, TokenType::False,
-                TokenType::If, TokenType::Else, TokenType::ElseIf,
-                TokenType::For, TokenType::While,
-                TokenType::Return, TokenType::Break, TokenType::Continue,
-                TokenType::Import, TokenType::Struct,
+                TokenType::Function,
+                TokenType::Let,
+                TokenType::Const,
+                TokenType::True,
+                TokenType::False,
+                TokenType::If,
+                TokenType::Else,
+                TokenType::ElseIf,
+                TokenType::For,
+                TokenType::While,
+                TokenType::Return,
+                TokenType::Break,
+                TokenType::Continue,
+                TokenType::Import,
+                TokenType::Struct,
                 TokenType::EOF,
             ]
         );
@@ -539,7 +645,12 @@ mod test {
     fn test_integer_literal() {
         assert_eq!(
             tokenize("0 42 100"),
-            vec![TokenType::Int(0), TokenType::Int(42), TokenType::Int(100), TokenType::EOF]
+            vec![
+                TokenType::Int(0),
+                TokenType::Int(42),
+                TokenType::Int(100),
+                TokenType::EOF
+            ]
         );
     }
 
@@ -547,7 +658,11 @@ mod test {
     fn test_float_literal() {
         assert_eq!(
             tokenize("3.14 0.5"),
-            vec![TokenType::Float(3.14), TokenType::Float(0.5), TokenType::EOF]
+            vec![
+                TokenType::Float(3.14),
+                TokenType::Float(0.5),
+                TokenType::EOF
+            ]
         );
     }
 

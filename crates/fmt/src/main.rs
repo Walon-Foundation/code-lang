@@ -1,6 +1,6 @@
 mod commands;
-mod util;
 mod lint_rules;
+mod util;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -43,4 +43,3 @@ fn main() -> Result<()> {
     }
     Ok(())
 }
-

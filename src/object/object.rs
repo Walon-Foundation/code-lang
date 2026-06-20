@@ -1,6 +1,10 @@
-use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 
-use crate::ast::ast::{Expression, Param, Statement};
+use crate::ast::ast::{Param, Statement};
 
 #[derive(Debug, Clone, Copy)]
 pub struct CallInfo {
@@ -36,19 +40,23 @@ pub enum Object {
         type_name: String,
         fields: HashMap<String, Object>,
     },
-    Module { name: String, pub_gated: bool, members: HashMap<String, Object> },
+    Module {
+        name: String,
+        pub_gated: bool,
+        members: HashMap<String, Object>,
+    },
     Function {
         parameters: Vec<Param>,
         body: Box<Statement>,
         env: Rc<RefCell<Environment>>,
     },
     EnumType {
-        name:String,
-        variants: Vec<String>
+        name: String,
+        variants: Vec<String>,
     },
     EnumVariant {
-      enum_name:String,
-      variant:String
+        enum_name: String,
+        variant: String,
     },
     Array(Vec<Object>),
     Hash(Vec<(Object, Object)>),
@@ -85,7 +93,7 @@ impl Object {
             Object::Array(_) => "ARRAY",
             Object::Hash(_) => "HASH",
             Object::EnumType { .. } => "ENUM_TYPE",
-            Object::EnumVariant { .. } => "ENUM_VARIANT"
+            Object::EnumVariant { .. } => "ENUM_VARIANT",
         }
     }
 }
@@ -105,29 +113,31 @@ impl std::fmt::Display for Object {
             Object::Error { message, .. } => write!(f, "error: {}", message),
             Object::StructType { name, .. } => write!(f, "struct {}", name),
             Object::StructInstance { type_name, fields } => {
-                let pairs: Vec<String> = fields.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
+                let pairs: Vec<String> = fields
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect();
                 write!(f, "{} {{ {} }}", type_name, pairs.join(", "))
-            },
+            }
             Object::Module { name, .. } => write!(f, "[Module: {}]", name),
             Object::Builtin(_) | Object::BuiltinHigherOrder(_) => write!(f, "[Builtin]"),
             Object::Function { parameters, .. } => {
                 let params: Vec<String> = parameters.iter().map(|p| format!("{:?}", p)).collect();
                 write!(f, "fn({})", params.join(", "))
-            },
+            }
             Object::Array(elems) => {
                 let s: Vec<String> = elems.iter().map(|e| format!("{}", e)).collect();
                 write!(f, "[{}]", s.join(", "))
-            },
+            }
             Object::Hash(pairs) => {
                 let s: Vec<String> = pairs.iter().map(|(k, v)| format!("{}: {}", k, v)).collect();
                 write!(f, "{{{}}}", s.join(", "))
-            },
+            }
             Object::EnumType { name, variants } => write!(f, "{}({})", name, variants.join(" | ")),
             Object::EnumVariant { enum_name, variant } => write!(f, "{}.{}", enum_name, variant),
         }
     }
 }
-
 
 // environment section
 pub struct Environment {
@@ -197,7 +207,7 @@ impl Environment {
         }
     }
 
-    pub fn mark_pub(&mut self, name:&str){
+    pub fn mark_pub(&mut self, name: &str) {
         self.pubs.insert(name.to_string());
     }
 }

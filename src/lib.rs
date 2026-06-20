@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+pub mod analysis;
 pub mod ast;
 pub mod evaluator;
 pub mod lexer;
@@ -6,4 +8,3 @@ pub mod parser;
 pub mod repl;
 pub mod std_lib;
 pub mod token;
-pub mod analysis;

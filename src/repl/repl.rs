@@ -1,9 +1,9 @@
 use rustyline::{Editor, error::ReadlineError};
 
-use crate::lexer::lexer::Lexer;
-use crate::parser::parser::{ParseError, Parser};
 use crate::evaluator::evaluator::Evaluator;
+use crate::lexer::lexer::Lexer;
 use crate::object::object::{Environment, Object};
+use crate::parser::parser::Parser;
 
 fn get_hint(message: &str) -> Option<&'static str> {
     if message.contains("type mismatch: INTEGER") && message.contains("STRING") {
@@ -24,13 +24,17 @@ fn get_hint(message: &str) -> Option<&'static str> {
         Some("check that the variable holds a function, not a value")
     } else if message.contains("division by zero") {
         Some("guard with 'if divisor != 0' before dividing")
-    } else if message.contains("not found in hash") || message.contains("key") && message.contains("not found") {
+    } else if message.contains("not found in hash")
+        || message.contains("key") && message.contains("not found")
+    {
         Some("use hash.has_key(h, key) to check before accessing")
     } else if message.contains("maximum call depth exceeded") {
         Some("check for infinite recursion; add a base case to your function")
     } else if message.contains("integer overflow") {
         Some("the value exceeded the 64-bit integer range")
-    } else if message.contains("break outside of loop") || message.contains("continue outside of loop") {
+    } else if message.contains("break outside of loop")
+        || message.contains("continue outside of loop")
+    {
         Some("break and continue are only valid inside while or for loops")
     } else {
         None
@@ -76,7 +80,9 @@ pub fn run_repl() {
         match rl.readline(">> ") {
             Ok(line) => {
                 let input = line.trim().to_string();
-                if input.is_empty() { continue; }
+                if input.is_empty() {
+                    continue;
+                }
                 rl.add_history_entry(&input).ok();
 
                 if input == "exit()" || input == "exit" || input == "quit" {
@@ -97,7 +103,11 @@ pub fn run_repl() {
 
                 let result = evaluator.eval(&program, &env);
                 match result {
-                    Object::Error { ref message, line, column } => {
+                    Object::Error {
+                        ref message,
+                        line,
+                        column,
+                    } => {
                         show_error(&input, message, line, column);
                     }
                     Object::Null => {}
@@ -133,7 +143,11 @@ pub fn execute(input: String) {
     let result = evaluator.eval(&program, &env);
 
     match result {
-        Object::Error { ref message, line, column } => {
+        Object::Error {
+            ref message,
+            line,
+            column,
+        } => {
             show_error(&input, message, line, column);
             std::process::exit(1);
         }

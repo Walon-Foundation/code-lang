@@ -1,6 +1,7 @@
-use crate::{ast::ast::{
-    Expression, LetPattern, Param, Program, Statement, StringSegment, SwitchArm
-}, token::token::{Token, TokenType}};
+use crate::{
+    ast::ast::{Expression, LetPattern, Param, Program, Statement},
+    token::token::{Token, TokenType},
+};
 
 // The Visitor trait.
 // Every method has a default implementation that calls the
@@ -8,7 +9,6 @@ use crate::{ast::ast::{
 // Override only the methods you care about.
 
 pub trait Visitor: Sized {
-
     fn visit_program(&mut self, program: &Program) {
         walk_program(self, program);
     }
@@ -22,13 +22,26 @@ pub trait Visitor: Sized {
     }
 
     // Statement-level hooks — called before walking children
-    fn visit_let(&mut self, _pattern: &LetPattern, _value: &Expression,_line: usize, _col: usize) {}
-    fn visit_const(&mut self, _pattern: &LetPattern, _value: &Expression, _line: usize, _col: usize) {}
+    fn visit_let(&mut self, _pattern: &LetPattern, _value: &Expression, _line: usize, _col: usize) {
+    }
+    fn visit_const(
+        &mut self,
+        _pattern: &LetPattern,
+        _value: &Expression,
+        _line: usize,
+        _col: usize,
+    ) {
+    }
     fn visit_return(&mut self, _value: &Expression, _line: usize, _col: usize) {}
     fn visit_import(&mut self, _path: &str, _line: usize, _col: usize) {}
     fn visit_block(&mut self, _stmts: &[Statement], _line: usize, _col: usize) {}
-    fn visit_enum_decl(&mut self, _name: &str, _variants: &[String],_line: usize, _col: usize) {}
-    fn visit_struct_decl(&mut self, _name: &Expression,_fields: &std::collections::HashMap<String, Expression>) {}
+    fn visit_enum_decl(&mut self, _name: &str, _variants: &[String], _line: usize, _col: usize) {}
+    fn visit_struct_decl(
+        &mut self,
+        _name: &Expression,
+        _fields: &std::collections::HashMap<String, Expression>,
+    ) {
+    }
 
     // Expression-level hooks
     fn visit_ident(&mut self, _value: &str, _line: usize, _col: usize) {}
@@ -36,19 +49,43 @@ pub trait Visitor: Sized {
     fn visit_float(&mut self, _value: f64, _line: usize, _col: usize) {}
     fn visit_bool(&mut self, _value: bool, _line: usize, _col: usize) {}
     fn visit_null(&mut self, _line: usize, _col: usize) {}
-    fn visit_call(&mut self, _fn_expr: &Expression, _args: &[Expression],
-                  _line: usize, _col: usize) {}
-    fn visit_member(&mut self, _object: &Expression, _property: &Expression,
-                    _line: usize, _col: usize) {}
-    fn visit_infix(&mut self, _op:TokenType, _left: &Expression, _right: &Expression,
-                   _line: usize, _col: usize) {}
-    fn visit_function(&mut self, _params: &[Param], _body: &Statement,
-                      _line: usize, _col: usize) {}
-    fn visit_if(&mut self, _condition: &Expression, _consequence: &Statement,
-                _line: usize, _col: usize) {}
-    fn visit_update(&mut self, _operator: &Token, _target: &Expression, _line: usize, _col: usize) {}
+    fn visit_call(
+        &mut self,
+        _fn_expr: &Expression,
+        _args: &[Expression],
+        _line: usize,
+        _col: usize,
+    ) {
+    }
+    fn visit_member(
+        &mut self,
+        _object: &Expression,
+        _property: &Expression,
+        _line: usize,
+        _col: usize,
+    ) {
+    }
+    fn visit_infix(
+        &mut self,
+        _op: TokenType,
+        _left: &Expression,
+        _right: &Expression,
+        _line: usize,
+        _col: usize,
+    ) {
+    }
+    fn visit_function(&mut self, _params: &[Param], _body: &Statement, _line: usize, _col: usize) {}
+    fn visit_if(
+        &mut self,
+        _condition: &Expression,
+        _consequence: &Statement,
+        _line: usize,
+        _col: usize,
+    ) {
+    }
+    fn visit_update(&mut self, _operator: &Token, _target: &Expression, _line: usize, _col: usize) {
+    }
 }
-
 
 // walk_* functions recurse into children and call the hooks above.
 // Tools that override visit_X but still want child traversal should
@@ -62,28 +99,51 @@ pub fn walk_program<V: Visitor>(v: &mut V, program: &Program) {
 
 pub fn walk_statement<V: Visitor>(v: &mut V, stmt: &Statement) {
     match stmt {
-
-        Statement::Let { pattern, value, line, column, .. } => {
+        Statement::Let {
+            pattern,
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_let(pattern, value, *line, *column);
             v.visit_expression(value);
         }
 
-        Statement::Const { pattern, value, line, column, .. } => {
+        Statement::Const {
+            pattern,
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_const(pattern, value, *line, *column);
             v.visit_expression(value);
         }
 
-        Statement::Return { value, line, column, .. } => {
+        Statement::Return {
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_return(value, *line, *column);
             v.visit_expression(value);
         }
 
-        Statement::Import { path, line, column, .. } => {
+        Statement::Import {
+            path, line, column, ..
+        } => {
             v.visit_import(path, *line, *column);
             // no children
         }
 
-        Statement::Block { statements, line, column, .. } => {
+        Statement::Block {
+            statements,
+            line,
+            column,
+            ..
+        } => {
             v.visit_block(statements, *line, *column);
             for s in statements {
                 v.visit_statement(s);
@@ -94,7 +154,13 @@ pub fn walk_statement<V: Visitor>(v: &mut V, stmt: &Statement) {
             v.visit_expression(expr);
         }
 
-        Statement::Enum { name, variant, line, column, .. } => {
+        Statement::Enum {
+            name,
+            variant,
+            line,
+            column,
+            ..
+        } => {
             v.visit_enum_decl(name, variant, *line, *column);
         }
 
@@ -117,20 +183,39 @@ pub fn walk_statement<V: Visitor>(v: &mut V, stmt: &Statement) {
 
 pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
     match expr {
-
-        Expression::Ident { value, line, column, .. } => {
+        Expression::Ident {
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_ident(value, *line, *column);
         }
 
-        Expression::Int { value, line, column, .. } => {
+        Expression::Int {
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_int(*value, *line, *column);
         }
 
-        Expression::Float { value, line, column, .. } => {
+        Expression::Float {
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_float(*value, *line, *column);
         }
 
-        Expression::Boolean { value, line, column, .. } => {
+        Expression::Boolean {
+            value,
+            line,
+            column,
+            ..
+        } => {
             v.visit_bool(*value, *line, *column);
         }
 
@@ -138,7 +223,13 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             v.visit_null(*line, *column);
         }
 
-        Expression::Call { function, argument, line, column, .. } => {
+        Expression::Call {
+            function,
+            argument,
+            line,
+            column,
+            ..
+        } => {
             v.visit_call(function, argument, *line, *column);
             v.visit_expression(function);
             for arg in argument {
@@ -146,13 +237,26 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             }
         }
 
-        Expression::Member { object, property, line, column, .. } => {
+        Expression::Member {
+            object,
+            property,
+            line,
+            column,
+            ..
+        } => {
             v.visit_member(object, property, *line, *column);
             v.visit_expression(object);
             v.visit_expression(property);
         }
 
-        Expression::Infix { left, op, right, line, column, .. } => {
+        Expression::Infix {
+            left,
+            op,
+            right,
+            line,
+            column,
+            ..
+        } => {
             v.visit_infix(op.token_type.clone(), left, right, *line, *column);
             v.visit_expression(left);
             v.visit_expression(right);
@@ -162,12 +266,26 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             v.visit_expression(right);
         }
 
-        Expression::Function { parameter, body, line, column, .. } => {
+        Expression::Function {
+            parameter,
+            body,
+            line,
+            column,
+            ..
+        } => {
             v.visit_function(parameter, body, *line, *column);
             v.visit_statement(body);
         }
 
-        Expression::If { condition, consequence, alternative, if_else, line, column, .. } => {
+        Expression::If {
+            condition,
+            consequence,
+            alternative,
+            if_else,
+            line,
+            column,
+            ..
+        } => {
             v.visit_if(condition, consequence, *line, *column);
             v.visit_expression(condition);
             v.visit_statement(consequence);
@@ -180,12 +298,20 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             }
         }
 
-        Expression::While { condition, body, .. } => {
+        Expression::While {
+            condition, body, ..
+        } => {
             v.visit_expression(condition);
             v.visit_statement(body);
         }
 
-        Expression::For { init, condition, post, body, .. } => {
+        Expression::For {
+            init,
+            condition,
+            post,
+            body,
+            ..
+        } => {
             v.visit_statement(init);
             v.visit_expression(condition);
             v.visit_statement(post);
@@ -246,7 +372,13 @@ pub fn walk_expression<V: Visitor>(v: &mut V, expr: &Expression) {
             }
         }
 
-        Expression::Update { operator, target, line, column, .. } => {
+        Expression::Update {
+            operator,
+            target,
+            line,
+            column,
+            ..
+        } => {
             v.visit_update(operator, target, *line, *column);
             v.visit_expression(target);
         }

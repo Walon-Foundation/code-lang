@@ -1,6 +1,9 @@
 [workspace]
 members = [".", "crates/lsp", "crates/fmt"]
 
+[workspace.lints.clippy]
+module_inception = "allow"
+
 [workspace.metadata.dist]
 cargo-dist-version = "0.22.1"
 ci = "github"

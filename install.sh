@@ -2,8 +2,7 @@
 set -e
 
 REPO="Walon-Foundation/code-lang"
-BIN="code-lang"
-INSTALL_DIR="${HOME}/.local/bin"
+INSTALL_DIR="${HOME}/.code-lang/bin"
 
 # ── OS detection ────────────────────────────────────────────────────────────
 OS=$(uname -s)
@@ -39,9 +38,7 @@ else
   exit 1
 fi
 
-# ── find the asset URL for our target from the latest release ────────────────
-# Queries the GitHub API and picks the browser_download_url that contains our
-# target triple, excluding installer scripts, checksums, and manifests.
+# ── fetch release info ────────────────────────────────────────────────────────
 RELEASE_JSON=$(${FETCH} "https://api.github.com/repos/${REPO}/releases/latest")
 
 VERSION=$(echo "$RELEASE_JSON" \
@@ -53,71 +50,74 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-URL=$(echo "$RELEASE_JSON" \
-  | grep '"browser_download_url"' \
-  | grep "${TARGET}" \
-  | grep -v 'installer\|\.sha256\|dist-manifest' \
-  | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' \
-  | head -1)
-
-if [ -z "$URL" ]; then
-  echo "error: no release asset found for ${TARGET}"
-  echo "check https://github.com/${REPO}/releases for available targets"
-  exit 1
-fi
-
-# derive archive filename from the URL
-ARCHIVE=$(basename "$URL")
-
 echo "installing code-lang ${VERSION} for ${TARGET}"
-echo "from: ${URL}"
 echo ""
 
-# ── download ─────────────────────────────────────────────────────────────────
-TMP=$(mktemp -d)
-trap 'rm -rf "$TMP"' EXIT
+# ── helper: download one archive and extract a named binary ──────────────────
+install_bin() {
+  BIN_NAME="$1"
+  # match the archive for this binary and target, skip checksums/manifests/installers
+  URL=$(echo "$RELEASE_JSON" \
+    | grep '"browser_download_url"' \
+    | grep "${BIN_NAME}" \
+    | grep "${TARGET}" \
+    | grep -v 'installer\|\.sha256\|dist-manifest' \
+    | sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' \
+    | head -1)
 
-if command -v curl > /dev/null 2>&1; then
-  curl -fsSL "$URL" -o "${TMP}/${ARCHIVE}"
-else
-  wget -q "$URL" -O "${TMP}/${ARCHIVE}"
-fi
+  if [ -z "$URL" ]; then
+    echo "warning: no release asset found for '${BIN_NAME}' on ${TARGET}, skipping"
+    return
+  fi
 
-# ── extract (handles both .tar.gz and .tar.xz) ───────────────────────────────
-case "$ARCHIVE" in
-  *.tar.gz)  tar -xzf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
-  *.tar.xz)  tar -xJf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
-  *.zip)     unzip -q "${TMP}/${ARCHIVE}" -d "$TMP" ;;
-  *)
-    echo "error: unknown archive format: ${ARCHIVE}"
+  ARCHIVE=$(basename "$URL")
+  TMP=$(mktemp -d)
+  trap 'rm -rf "$TMP"' EXIT
+
+  echo "downloading ${BIN_NAME}..."
+  if command -v curl > /dev/null 2>&1; then
+    curl -fsSL "$URL" -o "${TMP}/${ARCHIVE}"
+  else
+    wget -q "$URL" -O "${TMP}/${ARCHIVE}"
+  fi
+
+  case "$ARCHIVE" in
+    *.tar.gz) tar -xzf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
+    *.tar.xz) tar -xJf "${TMP}/${ARCHIVE}" -C "$TMP" ;;
+    *.zip)    unzip -q  "${TMP}/${ARCHIVE}" -d "$TMP" ;;
+    *)
+      echo "error: unknown archive format: ${ARCHIVE}"
+      exit 1
+      ;;
+  esac
+
+  BINARY=$(find "$TMP" -name "$BIN_NAME" -type f | head -1)
+  if [ -z "$BINARY" ]; then
+    echo "error: could not find '${BIN_NAME}' in the archive"
     exit 1
-    ;;
-esac
+  fi
 
-# find the binary (cargo-dist nests it in a subdirectory)
-BINARY=$(find "$TMP" -name "$BIN" -type f | head -1)
-if [ -z "$BINARY" ]; then
-  echo "error: could not find binary '${BIN}' in the archive"
-  exit 1
-fi
+  mv "$BINARY" "${INSTALL_DIR}/${BIN_NAME}"
+  chmod +x "${INSTALL_DIR}/${BIN_NAME}"
+  echo "installed: ${INSTALL_DIR}/${BIN_NAME}"
+}
 
 # ── install ───────────────────────────────────────────────────────────────────
 mkdir -p "$INSTALL_DIR"
-mv "$BINARY" "${INSTALL_DIR}/${BIN}"
-chmod +x "${INSTALL_DIR}/${BIN}"
+install_bin "code-lang"
+install_bin "code-lang-fmt"
 
-echo "installed: ${INSTALL_DIR}/${BIN}"
+echo ""
 
 # ── PATH check ────────────────────────────────────────────────────────────────
 case ":${PATH}:" in
   *":${INSTALL_DIR}:"*)
     ;;
   *)
-    echo ""
     echo "note: ${INSTALL_DIR} is not in your PATH"
     echo "add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
     echo ""
-    echo '  export PATH="${HOME}/.local/bin:${PATH}"'
+    echo '  export PATH="${HOME}/.code-lang/bin:${PATH}"'
     echo ""
     ;;
 esac

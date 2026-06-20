@@ -8,5 +8,8 @@ description = "LSP server for code-lang"
 name = "code-lang-lsp"
 path = "src/main.rs"
 
+[package.metadata.dist]
+dist = false
+
 [dependencies]
 code-lang = { path = "../..", version = "0.2.2" }

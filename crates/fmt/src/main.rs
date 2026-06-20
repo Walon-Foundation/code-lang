@@ -1,4 +1,11 @@
+mod commands;
+mod lint_rules;
+use std::path::PathBuf;
+
+use anyhow::Result;
 use clap::{Parser, Subcommand};
+
+use crate::commands::{check_file, lint_file};
 
 #[derive(Parser)]
 #[command(name = "code-lang-fmt")]
@@ -13,11 +20,22 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Check files for syntax errors without modifying them
-    Check { files: Vec<String> },
+    Check { files: Vec<PathBuf> },
     /// Lint files for style issues
-    Lint { files: Vec<String> },
+    Lint { files: Vec<PathBuf> },
 }
 
-fn main() {
-    let _cli = Cli::parse();
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    match cli.command {
+        Some(Commands::Check { files }) => {
+            check_file(&files)?;
+        }
+        Some(Commands::Lint { files }) => {
+            lint_file(&files)?;
+        }
+        None => {}
+    }
+    Ok(())
 }
+

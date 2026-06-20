@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use crate::token::token::Token;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct SwitchArm {
     pub pattern: Expression,
-    pub body: Box<Statement>
+    pub body: Box<Statement>,
 }
 
 #[derive(Debug, Clone)]
@@ -21,51 +21,168 @@ pub struct Program {
 #[derive(Debug, Clone)]
 pub struct Param {
     pub name: String,
-    pub default: Option<Box<Expression>>
+    pub default: Option<Box<Expression>>,
 }
 
 #[derive(Debug, Clone)]
 pub enum LetPattern {
     Ident(String),
     Array(Vec<String>),
-    Hash(Vec<(String, String)>)
+    Hash(Vec<(String, String)>),
 }
 
 // What Go split across Node + Statement interfaces becomes one enum.
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone)]
 pub enum Statement {
-    Let { pattern: LetPattern, value: Expression, line: usize, column: usize, end_line: usize, end_column: usize },
-    Const { pattern: LetPattern, value: Expression, line: usize, column: usize, end_line: usize, end_column: usize },
-    Return { value: Expression, line: usize, column: usize, end_line: usize, end_column: usize },
-    Expression { expr: Expression, line: usize, column: usize, end_line: usize, end_column: usize },
-    Block { statements: Vec<Statement>, line: usize, column: usize, end_line: usize, end_column: usize },
-    Struct { name: Box<Expression>, field: HashMap<String, Expression>, line: usize, column: usize, end_line: usize, end_column: usize },
-    Import { path: String, line: usize, column: usize, end_line: usize, end_column: usize },
-    Break { line: usize, column: usize, end_line: usize, end_column: usize },
-    Continue { line: usize, column: usize, end_line: usize, end_column: usize },
-    Enum { name: String, variant: Vec<String>, line: usize, column: usize, end_line: usize, end_column: usize },
-    Pub { statement: Box<Statement>, line: usize, column: usize, end_line: usize, end_column: usize },
+    Let {
+        pattern: LetPattern,
+        value: Expression,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Const {
+        pattern: LetPattern,
+        value: Expression,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Return {
+        value: Expression,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Expression {
+        expr: Expression,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Block {
+        statements: Vec<Statement>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Struct {
+        name: Box<Expression>,
+        field: HashMap<String, Expression>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Import {
+        path: String,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Break {
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Continue {
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Enum {
+        name: String,
+        variant: Vec<String>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Pub {
+        statement: Box<Statement>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct ElseIF {
     pub condition: Expression,
-    pub consequences: Statement
+    pub consequences: Statement,
 }
 
 // Same for Expression — one enum, one variant per node kind.
 #[derive(Debug, Clone)]
 pub enum Expression {
-    Ident { value: String, line: usize, column: usize, end_line: usize, end_column: usize },
-    Int { value: isize, line: usize, column: usize, end_line: usize, end_column: usize },
-    Float { value: f64, line: usize, column: usize, end_line: usize, end_column: usize },
-    Char { value: char, line: usize, column: usize, end_line: usize, end_column: usize },
-    Boolean { value: bool, line: usize, column: usize, end_line: usize, end_column: usize },
-    InterpolatedString {
-        parts: Vec<StringSegment>, line: usize, column: usize, end_line: usize, end_column: usize,
+    Ident {
+        value: String,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
     },
-    Prefix { op: Token, right: Box<Expression>, line: usize, column: usize, end_line: usize, end_column: usize },
-    Infix { left: Box<Expression>, op: Token, right: Box<Expression>, line: usize, column: usize, end_line: usize, end_column: usize },
+    Int {
+        value: isize,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Float {
+        value: f64,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Char {
+        value: char,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Boolean {
+        value: bool,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    InterpolatedString {
+        parts: Vec<StringSegment>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Prefix {
+        op: Token,
+        right: Box<Expression>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
+    Infix {
+        left: Box<Expression>,
+        op: Token,
+        right: Box<Expression>,
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
     If {
         condition: Box<Expression>,
         consequence: Box<Statement>,
@@ -190,5 +307,10 @@ pub enum Expression {
         end_line: usize,
         end_column: usize,
     },
-    Null { line: usize, column: usize, end_line: usize, end_column: usize },
+    Null {
+        line: usize,
+        column: usize,
+        end_line: usize,
+        end_column: usize,
+    },
 }

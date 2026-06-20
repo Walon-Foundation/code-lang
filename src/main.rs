@@ -1,7 +1,10 @@
-use std::{fs, path::{Path, PathBuf}};
 use anyhow::{Result, bail};
-use code_lang::repl::repl::{execute, run_repl};
 use clap::Parser;
+use code_lang::repl::repl::{execute, run_repl};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Parser)]
 #[command(name = "code-lang")]
@@ -21,7 +24,8 @@ fn main() -> Result<()> {
 }
 
 fn run_file(path: &Path) -> Result<()> {
-    let ext_ok = path.extension()
+    let ext_ok = path
+        .extension()
         .and_then(|e| e.to_str())
         .map(|e| e.eq_ignore_ascii_case("cl"))
         .unwrap_or(false);

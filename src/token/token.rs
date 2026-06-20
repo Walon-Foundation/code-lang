@@ -1,12 +1,10 @@
-
 #[derive(Debug, PartialEq, Clone)]
-pub enum StringPart{
+pub enum StringPart {
     Literal(String),
-    Expr(String)
+    Expr(String),
 }
 
-
-#[derive(Debug, PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Keywords
     Const,
@@ -39,10 +37,10 @@ pub enum TokenType {
 
     //String stuff
     InterpolatedString(Vec<StringPart>),
-     
+
     //Float
     Float(f64),
-    
+
     //char
     Char(char),
 
@@ -101,56 +99,55 @@ pub enum TokenType {
 
     //import
     EOF,
-    ILLEGAL
+    ILLEGAL,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    pub token_type:TokenType,
-    pub line:usize,
-    pub column:usize,
+    pub token_type: TokenType,
+    pub line: usize,
+    pub column: usize,
 }
 
 pub fn lookup_ident(ident: &str) -> TokenType {
     match ident {
-        "fn"       => TokenType::Function,
-        "let"      => TokenType::Let,
-        "true"     => TokenType::True,
-        "false"    => TokenType::False,
-        "if"       => TokenType::If,
-        "else"     => TokenType::Else,
-        "elseif"   => TokenType::ElseIf,
-        "for"      => TokenType::For,
-        "while"    => TokenType::While,
-        "return"   => TokenType::Return,
-        "break"    => TokenType::Break,
-        "in"       => TokenType::In,
+        "fn" => TokenType::Function,
+        "let" => TokenType::Let,
+        "true" => TokenType::True,
+        "false" => TokenType::False,
+        "if" => TokenType::If,
+        "else" => TokenType::Else,
+        "elseif" => TokenType::ElseIf,
+        "for" => TokenType::For,
+        "while" => TokenType::While,
+        "return" => TokenType::Return,
+        "break" => TokenType::Break,
+        "in" => TokenType::In,
         "continue" => TokenType::Continue,
-        "import"   => TokenType::Import,
-        "struct"   => TokenType::Struct,
-        "const"    => TokenType::Const,
-        "switch"   => TokenType::Switch,
-        "enum"     => TokenType::Enum,
-        "pub"      => TokenType::Pub,
-        "typeof"   => TokenType::Typeof,
-        "null"     => TokenType::Null,
-        _          => TokenType::Ident(ident.to_string()),
+        "import" => TokenType::Import,
+        "struct" => TokenType::Struct,
+        "const" => TokenType::Const,
+        "switch" => TokenType::Switch,
+        "enum" => TokenType::Enum,
+        "pub" => TokenType::Pub,
+        "typeof" => TokenType::Typeof,
+        "null" => TokenType::Null,
+        _ => TokenType::Ident(ident.to_string()),
     }
 }
-
 
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
-    fn lookup_ident_pass(){
+    fn lookup_ident_pass() {
         let value = lookup_ident("fn");
         assert_eq!(value, TokenType::Function)
     }
 
     #[test]
-    fn lookup_ident_fail(){
+    fn lookup_ident_fail() {
         let value = lookup_ident("go");
         assert_ne!(value, TokenType::Const)
     }

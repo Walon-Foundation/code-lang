@@ -6,15 +6,29 @@ use crate::object::object::{CallInfo, Object};
 
 fn parse(args: Vec<Object>, info: CallInfo) -> Object {
     if args.len() != 1 {
-        return Object::Error { message: "json.parse takes 1 argument".to_string(), line: info.line, column: info.column };
+        return Object::Error {
+            message: "json.parse takes 1 argument".to_string(),
+            line: info.line,
+            column: info.column,
+        };
     }
     let s = match &args[0] {
         Object::StringType(s) => s.clone(),
-        _ => return Object::Error { message: format!("json.parse expects STRING, got {}", args[0].type_name()), line: info.line, column: info.column },
+        _ => {
+            return Object::Error {
+                message: format!("json.parse expects STRING, got {}", args[0].type_name()),
+                line: info.line,
+                column: info.column,
+            };
+        }
     };
     match serde_json::from_str::<Value>(&s) {
         Ok(val) => json_to_object(val),
-        Err(e) => Object::Error { message: format!("json.parse: {}", e), line: info.line, column: info.column },
+        Err(e) => Object::Error {
+            message: format!("json.parse: {}", e),
+            line: info.line,
+            column: info.column,
+        },
     }
 }
 
@@ -23,13 +37,17 @@ fn json_to_object(val: Value) -> Object {
         Value::Null => Object::Null,
         Value::Bool(b) => Object::Bool(b),
         Value::Number(n) => {
-            if let Some(i) = n.as_i64() { Object::Integer(i) }
-            else { Object::Float(n.as_f64().unwrap_or(0.0)) }
+            if let Some(i) = n.as_i64() {
+                Object::Integer(i)
+            } else {
+                Object::Float(n.as_f64().unwrap_or(0.0))
+            }
         }
         Value::String(s) => Object::StringType(s),
         Value::Array(arr) => Object::Array(arr.into_iter().map(json_to_object).collect()),
         Value::Object(map) => {
-            let pairs = map.into_iter()
+            let pairs = map
+                .into_iter()
                 .map(|(k, v)| (Object::StringType(k), json_to_object(v)))
                 .collect();
             Object::Hash(pairs)
@@ -39,14 +57,26 @@ fn json_to_object(val: Value) -> Object {
 
 fn stringify(args: Vec<Object>, info: CallInfo) -> Object {
     if args.len() != 1 {
-        return Object::Error { message: "json.stringify takes 1 argument".to_string(), line: info.line, column: info.column };
+        return Object::Error {
+            message: "json.stringify takes 1 argument".to_string(),
+            line: info.line,
+            column: info.column,
+        };
     }
     match object_to_json(&args[0]) {
         Ok(val) => match serde_json::to_string(&val) {
             Ok(s) => Object::StringType(s),
-            Err(e) => Object::Error { message: format!("json.stringify: {}", e), line: info.line, column: info.column },
+            Err(e) => Object::Error {
+                message: format!("json.stringify: {}", e),
+                line: info.line,
+                column: info.column,
+            },
         },
-        Err(msg) => Object::Error { message: format!("json.stringify: {}", msg), line: info.line, column: info.column },
+        Err(msg) => Object::Error {
+            message: format!("json.stringify: {}", msg),
+            line: info.line,
+            column: info.column,
+        },
     }
 }
 
@@ -81,7 +111,11 @@ fn object_to_json(obj: &Object) -> Result<Value, String> {
 
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
-    members.insert("parse".to_string(),     Object::Builtin(parse));
+    members.insert("parse".to_string(), Object::Builtin(parse));
     members.insert("stringify".to_string(), Object::Builtin(stringify));
-    Object::Module { name: "json".to_string(), pub_gated: false, members }
+    Object::Module {
+        name: "json".to_string(),
+        pub_gated: false,
+        members,
+    }
 }

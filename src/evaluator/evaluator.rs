@@ -95,7 +95,7 @@ impl Evaluator {
                 Object::Null
             }
 
-            Statement::Let { pattern, value, line, column } => {
+            Statement::Let { pattern, value, line, column, .. } => {
                 let val = self.eval_expression(value, env);
                 // errors are stored as values so callers can use is_error()
                 match pattern {
@@ -138,7 +138,7 @@ impl Evaluator {
                 Object::Null
             }
 
-            Statement::Const { pattern, value, line, column } => {
+            Statement::Const { pattern, value, line, column, .. } => {
                 let val = self.eval_expression(value, env);
                 // errors are stored as values so callers can use is_error()
                 match pattern {
@@ -193,7 +193,7 @@ impl Evaluator {
                 val
             }
 
-            Statement::Struct { name, field } => {
+            Statement::Struct { name, field, .. } => {
                 let mut defaults: HashMap<String, Box<Object>> = HashMap::new();
                 for (key, expr) in field {
                     let val = self.eval_expression(expr, env);
@@ -215,16 +215,16 @@ impl Evaluator {
                 Object::Null
             }
 
-            Statement::Import { path, line, column } => self.eval_import_statement(path, *line, *column, env),
+            Statement::Import { path, line, column, .. } => self.eval_import_statement(path, *line, *column, env),
 
-            Statement::Break { line, column } => {
+            Statement::Break { line, column, .. } => {
                 if self.loop_depth == 0 {
                     return Object::Error { message: "break outside of loop".to_string(), line: *line, column: *column };
                 }
                 Object::Break
             }
 
-            Statement::Continue { line, column } => {
+            Statement::Continue { line, column, .. } => {
                 if self.loop_depth == 0 {
                     return Object::Error { message: "continue outside of loop".to_string(), line: *line, column: *column };
                 }
@@ -272,20 +272,20 @@ impl Evaluator {
             Expression::Char { value, .. } => Object::Char(*value),
             Expression::Boolean { value, .. } => Object::Bool(*value),
 
-            Expression::Ident { value, line, column } => {
+            Expression::Ident { value, line, column, .. } => {
                 match env.borrow().get(value) {
                     Some(obj) => obj,
                     None => Object::Error { message: format!("identifier not found: {}", value), line: *line, column: *column },
                 }
             }
 
-            Expression::Prefix { op, right, line, column } => {
+            Expression::Prefix { op, right, line, column, .. } => {
                 let right_val = self.eval_expression(right, env);
                 if matches!(right_val, Object::Error { .. }) { return right_val; }
                 self.eval_prefix(op, right_val, *line, *column)
             }
 
-            Expression::Infix { left, op, right, line, column } => {
+            Expression::Infix { left, op, right, line, column, .. } => {
                 if self.is_assignment(&op.token_type) {
                     return self.eval_assignment(left, op, right, env, *line, *column);
                 }
@@ -335,7 +335,7 @@ impl Evaluator {
                 }
             }
 
-            Expression::Call { function, argument, line, column } => {
+            Expression::Call { function, argument, line, column, .. } => {
                 //call for the struct method 
                 if let Expression::Member { object, property, .. } = function.as_ref() {
                     let reciever = self.eval_expression(object, env);
@@ -382,7 +382,7 @@ impl Evaluator {
                 Object::Array(elems)
             }
 
-            Expression::Index { left, index, line, column } => {
+            Expression::Index { left, index, line, column, .. } => {
                 let left_val = self.eval_expression(left, env);
                 if matches!(left_val, Object::Error { .. }) { return left_val; }
                 let idx = self.eval_expression(index, env);
@@ -460,7 +460,7 @@ impl Evaluator {
                 result
             }
 
-            Expression::ForIn { key, value, iterable, body, line, column } => {
+            Expression::ForIn { key, value, iterable, body, line, column, .. } => {
                 let iterable = self.eval_expression(iterable, env);
                 self.loop_depth += 1;
 
@@ -533,7 +533,7 @@ impl Evaluator {
                 Object::Null
             }
 
-            Expression::Update { operator, target, prefix, line, column } => {
+            Expression::Update { operator, target, prefix, line, column, .. } => {
                 let current = self.eval_expression(target, env);
                 if matches!(current, Object::Error { .. }) { return current; }
                 let updated = match &current {
@@ -582,7 +582,7 @@ impl Evaluator {
                 if *prefix { updated } else { current }
             }
 
-            Expression::Member { object, property, line, column } => {
+            Expression::Member { object, property, line, column, .. } => {
                 let obj = self.eval_expression(object, env);
                 if matches!(obj, Object::Error { .. }) { return obj; }
                 let prop = match property.as_ref() {
@@ -592,7 +592,7 @@ impl Evaluator {
                 self.eval_member_on_obj(&obj, &prop, *line, *column)
             }
 
-            Expression::StructLiteral { name, fields, line, column } => {
+            Expression::StructLiteral { name, fields, line, column, ..} => {
                 let obj = match env.borrow().get(name) {
                     Some(o) => o,
                     None => return Object::Error { message: format!("unknown struct: {}", name), line: *line, column: *column },

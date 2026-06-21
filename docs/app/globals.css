@@ -106,6 +106,9 @@ body {
   .log-entry   { flex-direction: column; gap: 1rem; }
   .log-sidebar { width: auto; }
 
+  /* Hide timeline connector line on mobile */
+  .changelog-line { display: none; }
+
   /* Docs prose — tighten up on small screens */
   .docs-content h1  { font-size: 1.5rem; }
   .docs-content h2  { font-size: 1.0625rem; margin-top: 2rem; }

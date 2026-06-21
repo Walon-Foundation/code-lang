@@ -3,12 +3,47 @@ import Link from "next/link";
 
 export const metadata: Metadata = { title: "Changelog" };
 
+type SectionTitle = "Language" | "Bug fixes" | "Safety" | "Standard library" | "Toolchain" | "Errors" | "REPL";
+
+const SECTION_STYLE: Record<SectionTitle, { color: string; bg: string; border: string }> = {
+  Language:         { color: "#c084fc", bg: "rgba(192,132,252,0.08)", border: "rgba(192,132,252,0.2)" },
+  "Bug fixes":      { color: "#f87171", bg: "rgba(248,113,113,0.08)", border: "rgba(248,113,113,0.2)" },
+  Safety:           { color: "#86efac", bg: "rgba(134,239,172,0.08)", border: "rgba(134,239,172,0.2)" },
+  "Standard library": { color: "#22d3ee", bg: "rgba(34,211,238,0.08)", border: "rgba(34,211,238,0.2)" },
+  Toolchain:        { color: "#818cf8", bg: "rgba(129,140,248,0.08)", border: "rgba(129,140,248,0.2)" },
+  Errors:           { color: "#fb923c", bg: "rgba(251,146,60,0.08)",  border: "rgba(251,146,60,0.2)"  },
+  REPL:             { color: "#fbbf24", bg: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.2)"  },
+};
+
+function sectionStyle(title: string) {
+  return SECTION_STYLE[title as SectionTitle] ?? { color: "#52525b", bg: "rgba(82,82,91,0.08)", border: "rgba(82,82,91,0.2)" };
+}
+
 const CHANGELOG: {
   version: string;
   date: string;
   tag: "release" | "dev";
   sections: { title: string; items: string[] }[];
 }[] = [
+  {
+    version: "v0.3.0",
+    date: "June 2026",
+    tag: "dev",
+    sections: [
+      {
+        title: "Toolchain",
+        items: [
+          "code-lang-fmt check — validate .cl files for parse errors, exits 1 on failure",
+          "code-lang-fmt lint — run UnusedImport and ShadowedBinding rules with optional --fix",
+          "cargo-dist release pipeline — pushes a git tag and GitHub Actions builds native binaries for Linux x64/ARM, macOS ARM, and Windows",
+          "install.sh — curl | sh installs both code-lang and code-lang-fmt into ~/.code-lang/bin on Linux and macOS",
+          "install.ps1 — equivalent one-liner installer for Windows PowerShell",
+          "ci.yml — GitHub Actions CI runs build, test, clippy -D warnings, and rustfmt --check on every push and pull request",
+          "ci.sh — local mirror of CI so you can run all four checks before pushing",
+        ],
+      },
+    ],
+  },
   {
     version: "v0.2.2",
     date: "June 2026",
@@ -58,7 +93,7 @@ const CHANGELOG: {
         ],
       },
       {
-        title: "Error handling",
+        title: "Errors",
         items: [
           "is_error(val) global builtin — test whether a value is an error without importing anything",
           "Errors stored in let/const are recoverable values — only bare expression statements propagate errors",
@@ -73,7 +108,7 @@ const CHANGELOG: {
     tag: "release",
     sections: [
       {
-        title: "Error quality",
+        title: "Errors",
         items: [
           "All errors now show the source line with a caret pointing to the exact column",
           "break and continue outside a loop now report the correct line/column",
@@ -117,7 +152,7 @@ const CHANGELOG: {
           "Structs with default field values and dot-notation access",
           "Module and import system for stdlib and .cl files",
           "Control flow: if / elseif / else, while, for, break, continue",
-          "Operators: arithmetic (**  //), comparison, logical (&&  ||), compound assignment, prefix/postfix ++/--",
+          "Operators: arithmetic (** //), comparison, logical (&& ||), compound assignment, prefix/postfix ++/--",
           "Types: Integer, Float, String, Char, Boolean, Array, Hash, Null, Function, Struct, Module",
         ],
       },
@@ -176,7 +211,7 @@ function TagBadge({ tag }: { tag: "release" | "dev" }) {
     <span
       style={{
         fontSize: "0.6875rem",
-        fontWeight: 600,
+        fontWeight: 700,
         letterSpacing: "0.05em",
         textTransform: "uppercase",
         borderRadius: "4px",
@@ -184,7 +219,7 @@ function TagBadge({ tag }: { tag: "release" | "dev" }) {
         ...styles,
       }}
     >
-      {tag === "dev" ? "In development" : "Release"}
+      {tag === "dev" ? "In dev" : "Release"}
     </span>
   );
 }
@@ -211,11 +246,11 @@ export default function ChangelogPage() {
       <h1
         style={{
           fontSize: "clamp(2rem, 5vw, 2.75rem)",
-          fontWeight: 700,
-          letterSpacing: "-0.04em",
+          fontWeight: 800,
+          letterSpacing: "-0.05em",
           color: "var(--text)",
           marginBottom: "1rem",
-          lineHeight: 1.15,
+          lineHeight: 1.1,
         }}
       >
         What&apos;s changed
@@ -226,53 +261,117 @@ export default function ChangelogPage() {
       </p>
 
       {/* Entries */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "4rem" }}>
-        {CHANGELOG.map((entry) => (
-          <div key={entry.version} className="log-entry">
-            {/* Sidebar */}
-            <div className="log-sidebar">
-              <p
+      <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+        {CHANGELOG.map((entry, ei) => (
+          <div
+            key={entry.version}
+            style={{
+              display: "flex",
+              gap: "3rem",
+              paddingBottom: ei < CHANGELOG.length - 1 ? "4rem" : "0",
+              position: "relative",
+            }}
+          >
+            {/* Timeline line */}
+            {ei < CHANGELOG.length - 1 && (
+              <div
+                aria-hidden
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.9375rem",
-                  fontWeight: 700,
-                  color: "var(--text)",
-                  marginBottom: "0.375rem",
-                  letterSpacing: "-0.02em",
+                  position: "absolute",
+                  left: "160px",
+                  top: "28px",
+                  bottom: "0",
+                  width: "1px",
+                  background: "var(--border)",
                 }}
-              >
-                {entry.version}
-              </p>
-              <p style={{ fontSize: "0.8125rem", color: "#52525b", marginBottom: "0.625rem" }}>{entry.date}</p>
-              <TagBadge tag={entry.tag} />
+              />
+            )}
+
+            {/* Sidebar */}
+            <div
+              className="log-sidebar"
+              style={{ paddingTop: "0.25rem", flexShrink: 0 }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+                {/* Timeline dot */}
+                <div
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: entry.tag === "release" ? "#22d3ee" : "#fbbf24",
+                    flexShrink: 0,
+                    boxShadow: entry.tag === "release"
+                      ? "0 0 8px rgba(34,211,238,0.5)"
+                      : "0 0 8px rgba(251,191,36,0.5)",
+                  }}
+                />
+                <p
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    color: "var(--text)",
+                    letterSpacing: "-0.02em",
+                    margin: 0,
+                  }}
+                >
+                  {entry.version}
+                </p>
+              </div>
+              <p style={{ fontSize: "0.8125rem", color: "#3f3f46", marginBottom: "0.625rem", paddingLeft: "1rem" }}>{entry.date}</p>
+              <div style={{ paddingLeft: "1rem" }}>
+                <TagBadge tag={entry.tag} />
+              </div>
             </div>
 
             {/* Content */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              {entry.sections.map((section) => (
-                <div key={section.title} style={{ marginBottom: "2rem" }}>
-                  <p
-                    style={{
-                      fontSize: "0.6875rem",
-                      fontWeight: 700,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: "#52525b",
-                      marginBottom: "0.75rem",
-                    }}
-                  >
-                    {section.title}
-                  </p>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    {section.items.map((item) => (
-                      <li key={item} style={{ display: "flex", gap: "0.625rem", alignItems: "flex-start" }}>
-                        <span style={{ color: "#818cf8", flexShrink: 0, marginTop: "0.1rem", fontSize: "0.75rem" }}>+</span>
-                        <span style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.6 }}>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              {entry.sections.map((section) => {
+                const s = sectionStyle(section.title);
+                return (
+                  <div key={section.title} style={{ marginBottom: "2rem" }}>
+                    {/* Section badge */}
+                    <span
+                      style={{
+                        display: "inline-block",
+                        fontSize: "0.6875rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: s.color,
+                        background: s.bg,
+                        border: `1px solid ${s.border}`,
+                        borderRadius: "4px",
+                        padding: "0.2rem 0.55rem",
+                        marginBottom: "0.875rem",
+                      }}
+                    >
+                      {section.title}
+                    </span>
+                    <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      {section.items.map((item) => (
+                        <li key={item} style={{ display: "flex", gap: "0.625rem", alignItems: "flex-start" }}>
+                          <span
+                            style={{
+                              color: s.color,
+                              flexShrink: 0,
+                              marginTop: "0.35rem",
+                              width: 4,
+                              height: 4,
+                              borderRadius: "50%",
+                              background: s.color,
+                              display: "inline-block",
+                              opacity: 0.7,
+                            }}
+                          />
+                          <span style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.65 }}>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}

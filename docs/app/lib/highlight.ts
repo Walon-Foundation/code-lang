@@ -1,7 +1,8 @@
 const KEYWORDS = new Set([
   "let", "const", "fn", "return", "if", "elseif", "else",
   "while", "for", "break", "continue", "import", "struct",
-  "true", "false", "null",
+  "true", "false", "null", "typeof", "switch", "enum",
+  "pub", "in", "self",
 ]);
 
 function esc(s: string): string {

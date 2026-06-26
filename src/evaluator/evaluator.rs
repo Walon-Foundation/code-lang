@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, rc::Rc};
 
 use crate::{
     ast::ast::{Expression, LetPattern, Program, Statement, StringSegment},
@@ -324,7 +324,7 @@ impl Evaluator {
 
     fn eval_expression(&mut self, expr: &Expression, env: &Env) -> Object {
         match expr {
-            Expression::Int { value, .. } => Object::Integer(*value as i64),
+            Expression::Int { value, .. } => Object::Integer(*value),
             Expression::Float { value, .. } => Object::Float(*value),
             Expression::InterpolatedString { parts, .. } => {
                 let mut result = String::new();
@@ -738,7 +738,7 @@ impl Evaluator {
                 Object::Null
             }
 
-            Expression::Switch { subject, arms, .. } => {
+            Expression::Switch { subject, arms, default, .. } => {
                 let subject_val = self.eval_expression(subject, env);
                 if matches!(subject_val, Object::Error { .. }) {
                     return subject_val;
@@ -752,6 +752,10 @@ impl Evaluator {
                     if self.objects_equal(&subject_val, &pat_val) {
                         return self.eval_statement(&arm.body, env);
                     }
+                }
+
+                if let Some(arm) = default {
+                    return self.eval_statement(arm, env)
                 }
 
                 Object::Null
@@ -772,9 +776,17 @@ impl Evaluator {
                 let updated = match &current {
                     Object::Integer(v) => {
                         if matches!(operator.token_type, TokenType::Inc) {
-                            Object::Integer(v + 1)
+                            v.checked_add(1).map(Object::Integer).unwrap_or_else(||Object::Error { 
+                                message: format!("integer overflow: {} + 1", v), 
+                                line: *line, 
+                                column: *column 
+                            })
                         } else {
-                            Object::Integer(v - 1)
+                            v.checked_sub(1).map(Object::Integer).unwrap_or_else(||Object::Error{
+                                message:format!("integer overflow: {} - 1", v),
+                                line: *line,
+                                column: *column
+                            })
                         }
                     }
                     Object::Float(v) => {
@@ -796,10 +808,16 @@ impl Evaluator {
                     }
                 };
                 match target.as_ref() {
-                    Expression::Ident { value: name, .. }
-                        if !env.borrow_mut().update(name, updated.clone()) =>
-                    {
-                        env.borrow_mut().set(name.clone(), updated.clone());
+                    Expression::Ident { value: name, .. } => {
+                        if env.borrow().get(name).is_none() {
+                            return Object::Error { 
+                                message: format!("cannot update undeclared variable '{}'", name), 
+                                line: *line, 
+                                column: *column 
+                            }
+                        }
+
+                        env.borrow_mut().set(name.clone(), updated.clone())
                     }
                     Expression::Member {
                         object: obj_expr,
@@ -905,7 +923,16 @@ impl Evaluator {
                         };
                     }
                 };
+
+                let valid_filed:HashSet<&str> = instance_fields.keys().map(|s| s.as_str()).collect();
                 for (k, v_expr) in fields {
+                    if !valid_filed.contains(k.as_str()) {
+                        return Object::Error{
+                            message: format!("unknown field '{}' on struct '{}'", k , name),
+                            line: *line,
+                            column: *column
+                        }
+                    }
                     let val = self.eval_expression(v_expr, env);
                     if matches!(val, Object::Error { .. }) {
                         return val;
@@ -1073,8 +1100,8 @@ impl Evaluator {
     fn eval_integer_infix(
         &self,
         op: &TokenType,
-        l: i64,
-        r: i64,
+        l: isize,
+        r: isize,
         line: usize,
         column: usize,
     ) -> Object {
@@ -1125,14 +1152,14 @@ impl Evaluator {
             }
             TokenType::Square => {
                 let result = (l as f64).powf(r as f64);
-                if result > i64::MAX as f64 || result < i64::MIN as f64 {
+                if result > isize::MAX as f64 || result < isize::MIN as f64 {
                     return Object::Error {
                         message: format!("integer overflow: {} ** {}", l, r),
                         line,
                         column,
                     };
                 }
-                Object::Integer(result as i64)
+                Object::Integer(result as isize)
             }
             TokenType::Floor => {
                 if r == 0 {
@@ -1142,7 +1169,7 @@ impl Evaluator {
                         column,
                     };
                 }
-                Object::Integer(((l as f64) / (r as f64)).floor() as i64)
+                Object::Integer(((l as f64) / (r as f64)).floor() as isize)
             }
             TokenType::LT => Object::Bool(l < r),
             TokenType::GT => Object::Bool(l > r),
@@ -1268,7 +1295,12 @@ impl Evaluator {
                     return final_val;
                 }
                 if !env.borrow_mut().update(name, final_val.clone()) {
-                    env.borrow_mut().set(name.clone(), final_val.clone());
+                    // env.borrow_mut().set(name.clone(), final_val.clone());
+                    return Object::Error { 
+                        message: format!("cannot assign to an undeclared variable '{}'; use 'let {} = ....' to declared it first",
+                            name, name), 
+                        line, column 
+                    }
                 }
                 final_val
             }
@@ -1400,7 +1432,14 @@ impl Evaluator {
                 match &mut container {
                     Object::Array(elements) => {
                         if let Object::Integer(i) = &idx {
-                            let i = *i as usize;
+                            let i_raw = *i;
+                            if i_raw < 0 {
+                                return Object::Error { 
+                                    message: format!("index {} out of range (len {})",i_raw, elements.len()), 
+                                    line, column }
+                            }
+
+                            let i = i_raw as usize;
                             if i >= elements.len() {
                                 return Object::Error {
                                     message: format!("index out of range: {}", i),

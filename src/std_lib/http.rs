@@ -9,7 +9,7 @@ fn make_response(status: u16, body: String) -> Object {
     Object::Hash(vec![
         (
             Object::StringType("status".to_string()),
-            Object::Integer(status as i64),
+            Object::Integer(status as isize),
         ),
         (
             Object::StringType("body".to_string()),

@@ -110,8 +110,8 @@ fn len(args: Vec<Object>, info: CallInfo) -> Object {
         };
     }
     match &args[0] {
-        Object::Array(elems) => Object::Integer(elems.len() as i64),
-        Object::StringType(s) => Object::Integer(s.len() as i64),
+        Object::Array(elems) => Object::Integer(elems.len() as isize),
+        Object::StringType(s) => Object::Integer(s.len() as isize),
         _ => Object::Error {
             message: format!(
                 "arrays.len expects ARRAY or STRING, got {}",
@@ -228,7 +228,7 @@ fn index_of(args: Vec<Object>, info: CallInfo) -> Object {
         Object::Array(elems) => {
             for (i, e) in elems.iter().enumerate() {
                 if obj_eq(e, &args[1]) {
-                    return Object::Integer(i as i64);
+                    return Object::Integer(i as isize);
                 }
             }
             Object::Integer(-1)
@@ -292,8 +292,8 @@ fn slice(args: Vec<Object>, info: CallInfo) -> Object {
         }
     };
     let len = elems.len() as i64;
-    let start = start.clamp(0, len) as usize;
-    let end = end.clamp(0, len) as usize;
+    let start = start.clamp(0, len as isize) as usize;
+    let end = end.clamp(0, len as isize) as usize;
     if start >= end {
         return Object::Array(vec![]);
     }
@@ -401,7 +401,7 @@ fn sum(args: Vec<Object>, info: CallInfo) -> Object {
     for e in &elems {
         match e {
             Object::Integer(n) => {
-                total_int += n;
+                total_int += *n as i64;
                 total_float += *n as f64;
             }
             Object::Float(n) => {
@@ -423,7 +423,7 @@ fn sum(args: Vec<Object>, info: CallInfo) -> Object {
     if has_float {
         Object::Float(total_float)
     } else {
-        Object::Integer(total_int)
+        Object::Integer(total_int as isize)
     }
 }
 

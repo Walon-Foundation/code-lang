@@ -38,9 +38,9 @@ fn to_int(args: Vec<Object>, info: CallInfo) -> Object {
     }
     match &args[0] {
         Object::Integer(n) => Object::Integer(*n),
-        Object::Float(f) => Object::Integer(*f as i64),
+        Object::Float(f) => Object::Integer(*f as isize),
         Object::Bool(b) => Object::Integer(if *b { 1 } else { 0 }),
-        Object::StringType(s) => match s.trim().parse::<i64>() {
+        Object::StringType(s) => match s.trim().parse::<isize>() {
             Ok(n) => Object::Integer(n),
             Err(_) => Object::Error {
                 message: format!("fmt.to_int: cannot convert \"{}\" to integer", s),
@@ -184,12 +184,19 @@ fn format_fn(args: Vec<Object>, info: CallInfo) -> Object {
     let mut i = 0;
     while i < chars.len() {
         if chars[i] == '%' && i + 1 < chars.len() {
+            if chars[i+ 1] == '\0'{
+                return Object::Error{
+                    message: "unterminated format specifier %".to_string(),
+                    line:info.line,
+                    column:info.column
+                }
+            }
             match chars[i + 1] {
                 '%' => {
                     result.push('%');
                     i += 2;
                 }
-                's' | 'd' | 'f' => {
+                's' => {
                     if arg_idx >= args.len() {
                         return Object::Error {
                             message: "fmt.format: not enough arguments for format string"
@@ -201,7 +208,30 @@ fn format_fn(args: Vec<Object>, info: CallInfo) -> Object {
                     result.push_str(&format!("{}", args[arg_idx]));
                     arg_idx += 1;
                     i += 2;
+                },
+
+                'f' => {
+                    match &args[arg_idx] {
+                        Object::Float(n) => { result.push_str(&n.to_string()); arg_idx += 1;},
+                        _ => return Object::Error { 
+                            message: format!("format: %d expect float, got {}",args[arg_idx].type_name() ), 
+                            line: info.line, 
+                            column: info.column 
+                        }
+                    }
                 }
+                
+                'd' => {
+                    match &args[arg_idx] {
+                        Object::Integer(n) => { result.push_str(&n.to_string()); arg_idx += 1;},
+                        _ => return Object::Error { 
+                            message: format!("format: %d expect integer, got {}",args[arg_idx].type_name() ), 
+                            line: info.line, 
+                            column: info.column 
+                        }
+                    }
+                }
+                
                 _ => {
                     result.push(chars[i]);
                     i += 1;
@@ -210,6 +240,13 @@ fn format_fn(args: Vec<Object>, info: CallInfo) -> Object {
         } else {
             result.push(chars[i]);
             i += 1;
+        }
+    }
+    if arg_idx < args.len(){
+        return Object::Error{
+            message:format!("fmt.format: {} unused argument(s)", args.len() - arg_idx),
+            line: info.line,
+            column: info.column
         }
     }
     Object::StringType(result)

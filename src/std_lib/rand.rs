@@ -45,7 +45,7 @@ fn int(args: Vec<Object>, info: CallInfo) -> Object {
             column: info.column,
         };
     }
-    Object::Integer(rand::rng().random_range(min..=max))
+    Object::Integer(rand::rng().random_range(min as i64..=max as i64) as isize)
 }
 
 fn float(args: Vec<Object>, info: CallInfo) -> Object {

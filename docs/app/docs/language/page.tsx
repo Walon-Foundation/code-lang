@@ -182,7 +182,8 @@ for (name, score in scores) {
       <h3>switch</h3>
       <p>
         Compare a subject against a series of patterns using <code>==</code>. The first matching arm runs.
-        If no arm matches, the result is <code>null</code>.
+        Add a <code>default</code> arm to handle any value that does not match. If no arm matches and
+        there is no default, the result is <code>null</code>.
       </p>
       <Pre>{`let direction = Direction.North;
 
@@ -191,6 +192,7 @@ switch (direction) {
     Direction.South => fmt.print("going south"),
     Direction.East  => fmt.print("going east"),
     Direction.West  => fmt.print("going west"),
+    default         => fmt.print("unknown direction"),
 };
 
 # switch on any value
@@ -198,6 +200,7 @@ switch (score // 10) {
     10 => "A+",
     9  => "A",
     8  => "B",
+    default => "below B",
 };`}</Pre>
 
       <h2 id="functions">Functions</h2>
@@ -330,23 +333,26 @@ switch (d) {
 
       <h2 id="error-handling">Error handling</h2>
       <p>
-        Errors in code-lang are values. When a stdlib function fails it returns an error object —
-        it does <strong>not</strong> crash the program. Use <code>is_error(val)</code> to test it.
+        Errors in code-lang are values, not exceptions. When a stdlib function fails it returns an
+        error object — it does <strong>not</strong> crash the program. Use <code>is_error(val)</code> to check it.
       </p>
-      <Pre>{`import "fs";
+      <Pre>{`import "fmt";
+import "fs";
 
 let content = fs.read_file("maybe.txt");
 
 if (is_error(content)) {
-    fmt.print("file not found");
+    fmt.print("could not read file");
 } else {
     fmt.print(content);
 };`}</Pre>
       <Note>
-        <code>is_error()</code> is a global builtin — no import needed. Errors stored in <code>let</code> or{" "}
-        <code>const</code> are recoverable values. A bare error expression (not assigned) propagates and
-        halts the current block.
+        <code>is_error()</code> is a global builtin — no import needed. An error value stored in a
+        variable is safe to inspect. A bare error expression that is not assigned or checked propagates
+        up and halts the current block.
       </Note>
+      <p>Use <code>??</code> to supply a fallback when a value is <code>null</code>:</p>
+      <Pre>{`let val = might_be_null() ?? "default";`}</Pre>
 
       <h2 id="modules">Modules</h2>
 

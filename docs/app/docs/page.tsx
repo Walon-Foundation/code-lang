@@ -28,6 +28,21 @@ cargo build --release`}</Pre>
         formatter (<code>code-lang-fmt</code>) and language server (<code>code-lang-lsp</code>).
       </p>
 
+      <h2 id="hello-world">Hello, World!</h2>
+      <p>
+        The smallest possible code-lang program. Create a file called <code>hello.cl</code>:
+      </p>
+      <Pre>{`import "fmt";
+
+fmt.print("Hello, World!");`}</Pre>
+      <p>Run it:</p>
+      <Pre lang="sh">{`code-lang hello.cl`}</Pre>
+      <Pre lang="text">{`Hello, World!`}</Pre>
+      <p>
+        <code>fmt</code> is the standard output module. <code>fmt.print</code> writes to stdout with a newline.
+        All stdlib modules are built in — just <code>import</code> and use.
+      </p>
+
       <h2 id="the-repl">The REPL</h2>
       <p>
         Run <code>code-lang</code> with no arguments to start the interactive shell. History is saved across sessions.
@@ -42,9 +57,9 @@ integer
 >> exit`}</Pre>
       <p>Exit with <code>exit</code>, <code>exit()</code>, or <kbd>Ctrl-C</kbd>.</p>
 
-      <h2 id="your-first-script">Your first script</h2>
+      <h2 id="your-first-script">A longer script</h2>
       <p>
-        Scripts use the <code>.cl</code> extension. Create <code>hello.cl</code>:
+        Scripts use the <code>.cl</code> extension. Here is a program that uses structs, functions, and the math module:
       </p>
       <Pre>{`import "fmt";
 import "math";
@@ -53,9 +68,9 @@ struct Point {
     x: 0,
     y: 0,
     distance: fn(self) {
-        math.sqrt(self.x ** 2 + self.y ** 2)
+        math.sqrt(self.x ** 2 + self.y ** 2);
     },
-}
+};
 
 let greet = fn(name, msg = "Hello") {
     fmt.print(msg + ", " + name + "!");
@@ -73,16 +88,19 @@ distance: 5`}</Pre>
         All standard library modules are built in — no installation or setup needed.
         Import any module by name and call its functions with dot notation:
       </p>
-      <Pre>{`import "strings";
+      <Pre>{`import "fmt";
+import "strings";
 import "arrays";
 import "json";
 
-strings.to_upper("hello");                       # HELLO
-arrays.map([1, 2, 3], fn(x) { x * 2 });         # [2, 4, 6]
-arrays.filter([1,2,3,4], fn(x) { x % 2 == 0 }); # [2, 4]
-json.stringify({ "ok": true });                  # {"ok":true}`}</Pre>
+strings.to_upper("hello");                        # HELLO
+arrays.map([1, 2, 3], fn(x) { x * 2; });         # [2, 4, 6]
+arrays.filter([1, 2, 3, 4], fn(x) { x % 2 == 0; }); # [2, 4]
+json.stringify({ "ok": true });                   # {"ok":true}
+
+fmt.print(strings.to_upper("hello"));             # HELLO`}</Pre>
       <p>
-        See the <Link href="/docs/stdlib">standard library reference</Link> for all 12 modules.
+        See the <Link href="/docs/stdlib">standard library reference</Link> for all 12 modules and their return types.
       </p>
 
       <h2 id="language-features">Language features at a glance</h2>
@@ -90,28 +108,35 @@ json.stringify({ "ok": true });                  # {"ok":true}`}</Pre>
 
       <h3>null and ??</h3>
       <Pre>{`let x;              # uninitialized — defaults to null
-let y = x ?? 0;     # 0, because x is null
-let z = 5 ?? 0;     # 5, because 5 is not null`}</Pre>
+let y = x ?? 0;     # 0  (x is null, so fall back to 0)
+let z = 5 ?? 0;     # 5  (5 is not null, keep it)`}</Pre>
 
       <h3>Destructuring</h3>
       <Pre>{`let [a, b, c] = [1, 2, 3];
-let { name, age } = { "name": "Walon", "age": 25 };`}</Pre>
+let { name, age } = { "name": "Walon", "age": 25 };
+
+fmt.print(a);     # 1
+fmt.print(name);  # Walon`}</Pre>
 
       <h3>Enums and switch</h3>
-      <Pre>{`enum Status { Ok, Pending, Err }
+      <Pre>{`import "fmt";
+
+enum Status { Ok, Pending, Err }
 
 let s = Status.Ok;
 switch (s) {
     Status.Ok      => fmt.print("all good"),
     Status.Pending => fmt.print("waiting"),
     Status.Err     => fmt.print("failed"),
+    default        => fmt.print("unknown"),
 };`}</Pre>
 
       <h3>typeof</h3>
-      <Pre>{`typeof 42;       # "integer"
-typeof "hello";  # "string"
-typeof null;     # "null"
-typeof [1,2];    # "array"`}</Pre>
+      <Pre>{`typeof 42;        # "integer"
+typeof "hello";   # "string"
+typeof null;      # "null"
+typeof [1, 2];    # "array"
+typeof true;      # "boolean"`}</Pre>
 
       <h2 id="error-format">Error format</h2>
       <p>

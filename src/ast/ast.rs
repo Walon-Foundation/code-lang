@@ -287,6 +287,7 @@ pub enum Expression {
     Switch {
         subject: Box<Expression>,
         arms: Vec<SwitchArm>,
+        default:Option<Box<Statement>>,
         line: usize,
         column: usize,
         end_line: usize,

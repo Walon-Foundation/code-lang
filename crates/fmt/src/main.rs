@@ -1,12 +1,13 @@
 mod commands;
 mod lint_rules;
 mod util;
+mod formatter;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::commands::{check_file, lint_file};
+use crate::commands::{check_file, format_file, lint_file};
 
 #[derive(Parser)]
 #[command(name = "code-lang-fmt")]
@@ -28,6 +29,13 @@ enum Commands {
         #[arg(long)]
         fix: bool,
     },
+
+    Format {
+        files: Vec<PathBuf>,
+
+        #[arg(long)]
+        stdout:bool
+    }
 }
 
 fn main() -> Result<()> {
@@ -39,6 +47,9 @@ fn main() -> Result<()> {
         Some(Commands::Lint { files, fix }) => {
             lint_file(&files, fix)?;
         }
+        Some(Commands::Format { files, stdout }) => {
+            format_file(&files, stdout)?;
+        },
         None => {}
     }
     Ok(())

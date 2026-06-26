@@ -29,6 +29,7 @@ pub enum TokenType {
     Pub,
     Typeof,
     Null,
+    Default,
 
     NullCoalesce,
 
@@ -132,6 +133,7 @@ pub fn lookup_ident(ident: &str) -> TokenType {
         "pub" => TokenType::Pub,
         "typeof" => TokenType::Typeof,
         "null" => TokenType::Null,
+        "default" => TokenType::Default,
         _ => TokenType::Ident(ident.to_string()),
     }
 }

@@ -6,6 +6,7 @@ use code_lang::{
     parser::parser::Parser,
 };
 
+use crate::formatter::Formatter;
 use crate::lint_rules::{
     ConstReassignment, DeadCode, EmptyBlock, LintFix, LintRule, LintSeverity, ShadowedBinding,
     UndefinedVariable, UnusedImport, UnusedVariable,
@@ -216,4 +217,57 @@ fn apply_fixes(path: &PathBuf, src: String, fixes: Vec<&LintFix>) {
     if let Err(e) = fs::write(path, result) {
         eprintln!("{}: failed to write fixes: {}", path.display(), e);
     }
+}
+
+
+pub fn format_file(files: &[PathBuf], stdout:bool) -> Result<()> {
+    for file in files {
+        let ext_ok = file
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.eq_ignore_ascii_case("cl"))
+            .unwrap_or(false);
+
+        if !ext_ok {
+            bail!("expect a .cl file, got: {}", file.display())
+        }
+
+        let src = match fs::read_to_string(file) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("{}: cannot read file: {}", file.display(), e);
+                continue;
+            }
+        };
+
+        let lines: Vec<&str> = src.lines().collect();
+        let lexer = Lexer::new(src.clone());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program();
+        
+        //formatter
+        if !parser.errors.is_empty() {
+            for err in &parser.errors {
+                print_caret(
+                    &lines,
+                    file,
+                    err.line,
+                    err.column,
+                    &LintSeverity::Error,
+                    None,
+                    &err.message,
+                );
+            }
+        }  
+
+        let formatted = Formatter::format(&program);
+        if stdout {
+            print!("{:?}", formatted)
+        } else if formatted != src {
+            fs::write(file, formatted)?;
+            println!("{}: formatted", file.display());
+        }
+    }
+    
+    Ok(())
 }

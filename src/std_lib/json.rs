@@ -38,7 +38,7 @@ fn json_to_object(val: Value) -> Object {
         Value::Bool(b) => Object::Bool(b),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                Object::Integer(i)
+                Object::Integer(i as isize)
             } else {
                 Object::Float(n.as_f64().unwrap_or(0.0))
             }

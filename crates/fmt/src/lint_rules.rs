@@ -4,7 +4,7 @@ use code_lang::{
     analysis::scope::ScopeTree,
     ast::{
         ast::{Expression, LetPattern, Statement},
-        walk::{Visitor, walk_statement},
+        walk::{Visitor, walk_expression, walk_statement},
     },
     token::token::TokenType,
 };
@@ -170,6 +170,10 @@ impl Visitor for ShadowedBinding {
     fn visit_const(&mut self, pattern: &LetPattern, _value: &Expression, line: usize, col: usize) {
         self.register_pattern(pattern, line, col);
     }
+
+    fn visit_expression(&mut self, expr: &Expression) {
+        
+    }
 }
 
 impl LintRule for ShadowedBinding {
@@ -212,6 +216,21 @@ impl Visitor for UnusedVariable {
                     self.declared.insert(alias.clone(), (line, col, false));
                 }
             }
+        }
+    }
+
+    fn visit_const(
+        &mut self,
+        pattern: &LetPattern,
+        _value: &Expression,
+        line: usize,
+        col: usize,
+    )
+    {
+        match pattern {
+            LetPattern::Array(names) => for name in names { self.declared.insert(name.to_string(), (line, col, false));},
+            LetPattern::Hash(pairs) => for (_, alias) in pairs  { self.declared.insert(alias.to_string(), (line, col, false));},
+            LetPattern::Ident(n) => { self.declared.insert(n.to_string(), (line,col, false));}
         }
     }
 
@@ -390,6 +409,8 @@ impl Visitor for DeadCode {
 
             self.returned = saved;
         }
+
+        walk_statement(self, stmt);
     }
 }
 
@@ -506,6 +527,8 @@ impl Visitor for EmptyBlock {
                 fix: None,
             });
         }
+
+        walk_expression(self, expr);
     }
 }
 
@@ -556,6 +579,17 @@ impl Visitor for UndefinedVariable {
                 fix: None,
             });
         }
+    }
+
+    fn visit_member(
+        &mut self,
+        object: &Expression,
+        _property: &Expression,
+        _line: usize,
+        _col: usize,
+    )
+    {
+        self.visit_expression(object);
     }
 }
 

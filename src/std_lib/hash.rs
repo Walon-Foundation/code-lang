@@ -158,7 +158,7 @@ fn len(args: Vec<Object>, info: CallInfo) -> Object {
         };
     }
     match &args[0] {
-        Object::Hash(pairs) => Object::Integer(pairs.len() as i64),
+        Object::Hash(pairs) => Object::Integer(pairs.len() as isize),
         _ => Object::Error {
             message: format!("hash.len expects HASH, got {}", args[0].type_name()),
             line: info.line,

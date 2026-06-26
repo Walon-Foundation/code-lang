@@ -379,7 +379,7 @@ fn index(args: Vec<Object>, info: CallInfo) -> Object {
         }
     };
     match s.find(substr.as_str()) {
-        Some(i) => Object::Integer(i as i64),
+        Some(i) => Object::Integer(i as isize),
         None => Object::Integer(-1),
     }
 }
@@ -418,7 +418,7 @@ fn count(args: Vec<Object>, info: CallInfo) -> Object {
             };
         }
     };
-    Object::Integer(s.matches(substr.as_str()).count() as i64)
+    Object::Integer(s.matches(substr.as_str()).count() as isize)
 }
 
 fn repeat(args: Vec<Object>, info: CallInfo) -> Object {
@@ -556,7 +556,7 @@ fn parse_int(args: Vec<Object>, info: CallInfo) -> Object {
         };
     }
     match &args[0] {
-        Object::StringType(s) => match s.trim().parse::<i64>() {
+        Object::StringType(s) => match s.trim().parse::<isize>() {
             Ok(n) => Object::Integer(n),
             Err(_) => Object::Error {
                 message: format!("strings.parse_int: cannot parse \"{}\" as integer", s),
@@ -603,6 +603,25 @@ fn parse_float(args: Vec<Object>, info: CallInfo) -> Object {
     }
 }
 
+fn len(args: Vec<Object>, info:CallInfo) -> Object {
+    if args.len() != 1 {
+        return Object::Error { 
+            message: "strings.len() takes 1 argument".to_string(),
+            line: info.line, 
+            column: info.column 
+        }
+    }
+
+    match &args[0] {
+        Object::StringType(s) => Object::Integer(s.chars().count() as isize),
+        _ => Object::Error { 
+            message: "strings.len expects a string".to_string(), 
+            line: info.line, 
+            column: info.column 
+        }
+    }
+}
+
 pub fn module() -> Object {
     let mut members: HashMap<String, Object> = HashMap::new();
     members.insert("to_upper".to_string(), Object::Builtin(to_upper));
@@ -628,6 +647,7 @@ pub fn module() -> Object {
     members.insert("is_empty".to_string(), Object::Builtin(is_empty));
     members.insert("pad_left".to_string(), Object::Builtin(pad_left));
     members.insert("pad_right".to_string(), Object::Builtin(pad_right));
+    members.insert("len".to_string(), Object::Builtin(len));
     Object::Module {
         name: "strings".to_string(),
         pub_gated: false,

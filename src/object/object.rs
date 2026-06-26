@@ -18,7 +18,7 @@ pub trait Evaluable {
 
 #[derive(Clone)]
 pub enum Object {
-    Integer(i64),
+    Integer(isize),
     Float(f64),
     StringType(String),
     Char(char),

@@ -12,7 +12,7 @@ fn now(args: Vec<Object>, info: CallInfo) -> Object {
             column: info.column,
         };
     }
-    Object::Integer(Utc::now().timestamp_millis())
+    Object::Integer(Utc::now().timestamp_millis() as isize)
 }
 
 fn unix(args: Vec<Object>, info: CallInfo) -> Object {
@@ -23,7 +23,7 @@ fn unix(args: Vec<Object>, info: CallInfo) -> Object {
             column: info.column,
         };
     }
-    Object::Integer(Utc::now().timestamp())
+    Object::Integer(Utc::now().timestamp() as isize)
 }
 
 fn sleep(args: Vec<Object>, info: CallInfo) -> Object {
@@ -36,6 +36,13 @@ fn sleep(args: Vec<Object>, info: CallInfo) -> Object {
     }
     match &args[0] {
         Object::Integer(ms) => {
+            if *ms < 0 {
+                return Object::Error{
+                    message: format!("time.sleep: duration cannot be negative, got {}", ms),
+                    line: info.line,
+                    column:info.column
+                }
+            }
             std::thread::sleep(std::time::Duration::from_millis(*ms as u64));
             Object::Null
         }
@@ -56,7 +63,7 @@ fn since(args: Vec<Object>, info: CallInfo) -> Object {
         };
     }
     match &args[0] {
-        Object::Integer(start_ms) => Object::Integer(Utc::now().timestamp_millis() - start_ms),
+        Object::Integer(start_ms) => Object::Integer((Utc::now().timestamp_millis() - *start_ms as i64) as isize),
         _ => Object::Error {
             message: format!("time.since expects INTEGER, got {}", args[0].type_name()),
             line: info.line,
@@ -100,7 +107,7 @@ fn format(args: Vec<Object>, info: CallInfo) -> Object {
         }
     };
     let dt: DateTime<Local> = Local
-        .timestamp_millis_opt(ms)
+        .timestamp_millis_opt(ms as i64)
         .single()
         .unwrap_or_else(Local::now);
     Object::StringType(dt.format(&layout).to_string())
@@ -117,10 +124,10 @@ fn year(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.year() as i64)
+            Object::Integer(dt.year() as isize)
         }
         _ => Object::Error {
             message: format!("time.year expects INTEGER, got {}", args[0].type_name()),
@@ -141,10 +148,10 @@ fn month(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.month() as i64)
+            Object::Integer(dt.month() as isize)
         }
         _ => Object::Error {
             message: format!("time.month expects INTEGER, got {}", args[0].type_name()),
@@ -165,10 +172,10 @@ fn day(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.day() as i64)
+            Object::Integer(dt.day() as isize)
         }
         _ => Object::Error {
             message: format!("time.day expects INTEGER, got {}", args[0].type_name()),
@@ -189,10 +196,10 @@ fn hour(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.hour() as i64)
+            Object::Integer(dt.hour() as isize)
         }
         _ => Object::Error {
             message: format!("time.hour expects INTEGER, got {}", args[0].type_name()),
@@ -213,10 +220,10 @@ fn minute(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.minute() as i64)
+            Object::Integer(dt.minute() as isize)
         }
         _ => Object::Error {
             message: format!("time.minute expects INTEGER, got {}", args[0].type_name()),
@@ -237,10 +244,10 @@ fn second(args: Vec<Object>, info: CallInfo) -> Object {
     match &args[0] {
         Object::Integer(ms) => {
             let dt = Utc
-                .timestamp_millis_opt(*ms)
+                .timestamp_millis_opt(*ms as i64)
                 .single()
                 .unwrap_or_else(Utc::now);
-            Object::Integer(dt.second() as i64)
+            Object::Integer(dt.second() as isize)
         }
         _ => Object::Error {
             message: format!("time.second expects INTEGER, got {}", args[0].type_name()),

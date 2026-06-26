@@ -130,8 +130,9 @@ impl Parser {
                                 got: self.cur_token.clone(),
                             },
                             message: format!(
-                                "expected identifier in array destructuring pattern, got {:?}",
-                                self.cur_token.token_type
+                                "expected indentifier in array destructuring pattern, got {:?}",
+                                // token_type_name(&TokenType::Ident),
+                                token_type_name(&self.cur_token.token_type)
                             ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
@@ -163,7 +164,7 @@ impl Parser {
                             },
                             message: format!(
                                 "expected identifier in hash destructuring pattern, got {:?}",
-                                self.cur_token.token_type
+                                token_type_name(&self.cur_token.token_type)
                             ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
@@ -184,7 +185,7 @@ impl Parser {
                                 },
                                 message: format!(
                                     "expected identifier for destructuring alias, got {:?}",
-                                    self.cur_token.token_type
+                                    token_type_name(&self.cur_token.token_type)
                                 ),
                                 line: self.cur_token.line,
                                 column: self.cur_token.column,
@@ -566,9 +567,37 @@ impl Parser {
         }
 
         let mut arms = Vec::new();
+        let mut default: Option<Box<Statement>> = None;
 
         while !self.peak_token_is(&TokenType::RBrace) && !self.peak_token_is(&TokenType::EOF) {
-            self.next_token(); // cur = pattern expression start
+            self.next_token(); // cur = pattern or 'default'
+
+            if self.cur_token_is(&TokenType::Default) {
+                if !self.expect_peak(TokenType::FatArrow) {
+                    return None;
+                }
+                let body = if self.peak_token_is(&TokenType::LBrace) {
+                    self.next_token();
+                    self.parse_block_statement()?
+                } else {
+                    self.next_token();
+                    let body_line = self.cur_token.line;
+                    let body_col = self.cur_token.column;
+                    let expr = self.parse_expression(Precedences::Lowest)?;
+                    Statement::Expression {
+                        expr,
+                        line: body_line,
+                        column: body_col,
+                        end_line: self.cur_token.line,
+                        end_column: self.cur_token.column + 1,
+                    }
+                };
+                if self.peak_token_is(&TokenType::Comma) {
+                    self.next_token();
+                }
+                default = Some(Box::new(body));
+                continue;
+            }
 
             let pattern = self.parse_expression(Precedences::Lowest)?;
 
@@ -584,7 +613,6 @@ impl Parser {
                 let body_line = self.cur_token.line;
                 let body_col = self.cur_token.column;
                 let expr = self.parse_expression(Precedences::Lowest)?;
-                // cur_token is last token of expr
                 Statement::Expression {
                     expr,
                     line: body_line,
@@ -594,25 +622,25 @@ impl Parser {
                 }
             };
 
+            if self.peak_token_is(&TokenType::Comma) {
+                self.next_token();
+            }
+
             arms.push(SwitchArm {
                 pattern,
                 body: Box::new(body),
             });
-
-            if self.peak_token_is(&TokenType::Comma) {
-                self.next_token();
-            }
         }
 
         if !self.expect_peak(TokenType::RBrace) {
             return None;
         }
 
-        // cur_token is '}'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
         Some(Expression::Switch {
             subject: Box::new(subject),
+            default,
             arms,
             line,
             column,
@@ -635,7 +663,7 @@ impl Parser {
                     },
                     message: format!(
                         "expected loop variable name, got {:?}",
-                        self.cur_token.token_type
+                        token_type_name(&self.cur_token.token_type)
                     ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
@@ -658,7 +686,7 @@ impl Parser {
                         },
                         message: format!(
                             "expected second loop variable name, got {:?}",
-                            self.cur_token.token_type
+                            token_type_name(&self.cur_token.token_type)
                         ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
@@ -806,7 +834,7 @@ impl Parser {
                     },
                     message: format!(
                         "expected parameter name, got {:?}",
-                        self.cur_token.token_type
+                        token_type_name(&self.cur_token.token_type)
                     ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
@@ -1239,7 +1267,7 @@ impl Parser {
                     },
                     message: format!(
                         "'pub' can only precede 'let' or 'const', got {:?}",
-                        self.cur_token.token_type
+                        token_type_name(&self.cur_token.token_type)
                     ),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
@@ -1272,7 +1300,7 @@ impl Parser {
                         expected: TokenType::Ident(String::new()),
                         got: self.cur_token.clone(),
                     },
-                    message: format!("expected enum name, got {:?}", self.cur_token.token_type),
+                    message: format!("expected enum name, got {:?}", token_type_name(&self.cur_token.token_type)),
                     line: self.cur_token.line,
                     column: self.cur_token.column,
                 });
@@ -1297,7 +1325,7 @@ impl Parser {
                         },
                         message: format!(
                             "expected enum variant name, got {:?}",
-                            self.cur_token.token_type
+                            token_type_name(&self.cur_token.token_type)
                         ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
@@ -1403,7 +1431,7 @@ impl Parser {
                         },
                         message: format!(
                             "expected struct field name, got {:?}",
-                            self.cur_token.token_type
+                            token_type_name(&self.cur_token.token_type)
                         ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
@@ -1511,7 +1539,7 @@ impl Parser {
                             },
                             message: format!(
                                 "expected identifier in array destructuring pattern, got {:?}",
-                                self.cur_token.token_type
+                                token_type_name(&self.cur_token.token_type)
                             ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
@@ -1543,7 +1571,7 @@ impl Parser {
                             },
                             message: format!(
                                 "expected identifier in hash destructuring pattern, got {:?}",
-                                self.cur_token.token_type
+                                token_type_name(&self.cur_token.token_type)
                             ),
                             line: self.cur_token.line,
                             column: self.cur_token.column,
@@ -1564,7 +1592,7 @@ impl Parser {
                                 },
                                 message: format!(
                                     "expected identifier for destructuring alias, got {:?}",
-                                    self.cur_token.token_type
+                                    token_type_name(&self.cur_token.token_type)
                                 ),
                                 line: self.cur_token.line,
                                 column: self.cur_token.column,
@@ -1703,7 +1731,7 @@ impl Parser {
                         },
                         message: format!(
                             "expected struct field name, got {:?}",
-                            self.cur_token.token_type
+                            token_type_name(&self.cur_token.token_type)
                         ),
                         line: self.cur_token.line,
                         column: self.cur_token.column,
@@ -1810,9 +1838,9 @@ impl Parser {
                 got: self.peak_token.clone(),
             },
             message: format!(
-                "expected {:?}, got {:?}",
-                expected.clone(),
-                self.peak_token.token_type
+                "expected {}, got {}",
+                token_type_name(&expected),
+                token_type_name(&self.cur_token.token_type)
             ),
             line: self.peak_token.line,
             column: self.peak_token.column,
@@ -1891,5 +1919,38 @@ impl Parser {
         p.next_token();
 
         p
+    }
+}
+
+
+fn token_type_name(tt: &TokenType) -> String {
+    match tt {
+        TokenType::Ident(s) if s.is_empty() => "identifier".to_string(),
+        TokenType::Ident(s)                 => format!("'{}'", s),
+        TokenType::Int(n)                   => format!("{}", n),
+        TokenType::Float(f)                 => format!("{}", f),
+        TokenType::InterpolatedString(_)    => "string".to_string(),
+        TokenType::Char(c)                  => format!("'{}'", c),
+        TokenType::Let                      => "'let'".to_string(),
+        TokenType::Const                    => "'const'".to_string(),
+        TokenType::Function                 => "'fn'".to_string(),
+        TokenType::If                       => "'if'".to_string(),
+        TokenType::Else                     => "'else'".to_string(),
+        TokenType::Return                   => "'return'".to_string(),
+        TokenType::Import                   => "'import'".to_string(),
+        TokenType::LBrace                   => "'{'".to_string(),
+        TokenType::RBrace                   => "'}'".to_string(),
+        TokenType::LParan                   => "'('".to_string(),
+        TokenType::RParen                   => "')'".to_string(),
+        TokenType::LBracket                 => "'['".to_string(),
+        TokenType::RBracket                 => "']'".to_string(),
+        TokenType::Semicolon                => "';'".to_string(),
+        TokenType::Comma                    => "','".to_string(),
+        TokenType::Colon                    => "':'".to_string(),
+        TokenType::Assign                   => "'='".to_string(),
+        TokenType::FatArrow                 => "'=>'".to_string(),
+        TokenType::EOF                      => "end of file".to_string(),
+        TokenType::ILLEGAL                  => "illegal token".to_string(),
+        _                                   => format!("{:?}", tt),  // fallback for operators
     }
 }

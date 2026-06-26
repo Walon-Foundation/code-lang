@@ -214,13 +214,20 @@ export default function StdlibReference() {
     <>
       <h1>Standard library</h1>
       <p>
-        All stdlib modules are preloaded — no installation needed. Import a module by name and use dot notation to call its functions.
+        All 12 stdlib modules are preloaded — no installation needed. Import a module by name and use dot
+        notation to call its functions. The <strong>Returns</strong> column shows the type each function
+        produces. Use <code>typeof</code> at any time to confirm the type of a value at runtime.
       </p>
-      <Pre>{`import "math";
+      <Pre>{`import "fmt";
+import "math";
 import "strings";
 
-math.sqrt(9);               # 3.0
-strings.to_upper("hello");  # HELLO`}</Pre>
+math.sqrt(9);                    # 3.0  → float
+strings.to_upper("hello");       # HELLO  → string
+strings.split("a,b,c", ",");     # ["a", "b", "c"]  → array
+
+typeof math.sqrt(9);             # "float"
+typeof strings.split("a", ",");  # "array"`}</Pre>
 
       {MODULES.map((mod) => (
         <section key={mod.name}>

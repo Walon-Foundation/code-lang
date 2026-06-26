@@ -28,6 +28,21 @@ cargo build --release`}</Pre>
         formatter (<code>code-lang-fmt</code>) and language server (<code>code-lang-lsp</code>).
       </p>
 
+      <h2 id="hello-world">Hello, World!</h2>
+      <p>
+        The smallest possible code-lang program. Create a file called <code>hello.cl</code>:
+      </p>
+      <Pre>{`import "fmt";
+
+fmt.print("Hello, World!");`}</Pre>
+      <p>Run it:</p>
+      <Pre lang="sh">{`code-lang hello.cl`}</Pre>
+      <Pre lang="text">{`Hello, World!`}</Pre>
+      <p>
+        <code>fmt</code> is the standard output module. <code>fmt.print</code> writes to stdout with a newline.
+        All stdlib modules are built in — just <code>import</code> and use.
+      </p>
+
       <h2 id="the-repl">The REPL</h2>
       <p>
         Run <code>code-lang</code> with no arguments to start the interactive shell. History is saved across sessions.
@@ -42,9 +57,9 @@ integer
 >> exit`}</Pre>
       <p>Exit with <code>exit</code>, <code>exit()</code>, or <kbd>Ctrl-C</kbd>.</p>
 
-      <h2 id="your-first-script">Your first script</h2>
+      <h2 id="your-first-script">A longer script</h2>
       <p>
-        Scripts use the <code>.cl</code> extension. Create <code>hello.cl</code>:
+        Scripts use the <code>.cl</code> extension. Here is a program that uses structs, functions, and the math module:
       </p>
       <Pre>{`import "fmt";
 import "math";
@@ -53,9 +68,9 @@ struct Point {
     x: 0,
     y: 0,
     distance: fn(self) {
-        math.sqrt(self.x ** 2 + self.y ** 2)
+        math.sqrt(self.x ** 2 + self.y ** 2);
     },
-}
+};
 
 let greet = fn(name, msg = "Hello") {
     fmt.print(msg + ", " + name + "!");

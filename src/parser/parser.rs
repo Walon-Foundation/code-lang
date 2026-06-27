@@ -226,6 +226,9 @@ impl Parser {
         }
 
         // cur_token is ';' or last token of value expression
+        if !self.expect_peak(TokenType::Semicolon){
+            return None;
+        }
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
         Some(Statement::Const {
@@ -1362,7 +1365,9 @@ impl Parser {
     fn parse_continue_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
-        self.expect_peak(TokenType::Semicolon);
+        if !self.expect_peak(TokenType::Semicolon){
+            return None;
+        }
         // cur_token is ';' if found, otherwise 'continue'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
@@ -1377,7 +1382,9 @@ impl Parser {
     fn parse_break_statement(&mut self) -> Option<Statement> {
         let line = self.cur_token.line;
         let column = self.cur_token.column;
-        self.expect_peak(TokenType::Semicolon);
+        if !self.expect_peak(TokenType::Semicolon){
+            return None;
+        }
         // cur_token is ';' if found, otherwise 'break'
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
@@ -1648,6 +1655,9 @@ impl Parser {
             };
 
         // cur_token is ';' or last token of value
+        if !self.expect_peak(TokenType::Semicolon){
+            return None;
+        }
         let end_line = self.cur_token.line;
         let end_column = self.cur_token.column + 1;
         Some(Statement::Let {

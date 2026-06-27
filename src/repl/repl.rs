@@ -97,9 +97,15 @@ pub fn run_repl() {
                 if !parser.errors.is_empty() {
                     for err in &parser.errors {
                         show_error(&input, &err.message, err.line, err.column);
+                        if !evaluator.call_stack.is_empty() {
+                            for err in evaluator.call_stack.iter().clone() {
+                                show_error(&input, &err.name, err.call_line, err.call_column);
+                            }
+                        }
                     }
                     continue;
                 }
+
 
                 let result = evaluator.eval(&program, &env);
                 match result {
@@ -149,6 +155,11 @@ pub fn execute(input: String) {
             column,
         } => {
             show_error(&input, message, line, column);
+            if !evaluator.call_stack.is_empty(){
+                for e in evaluator.call_stack.iter().clone() {
+                    show_error(&input, &e.name, e.call_line, e.call_column);
+                }
+            }
             std::process::exit(1);
         }
         Object::Null => {}

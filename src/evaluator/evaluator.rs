@@ -13,7 +13,14 @@ const MAX_CALL_DEPTH: usize = 500;
 pub struct Evaluator {
     pub loop_depth: usize,
     pub call_depth: usize,
+    pub call_stack: Vec<CallFrame>,
     pub module_cache: HashMap<String, Object>,
+}
+
+pub struct CallFrame {
+    pub name:String,
+    pub call_line: usize,
+    pub call_column: usize
 }
 
 type Env = Rc<RefCell<Environment>>;
@@ -23,6 +30,7 @@ impl Evaluator {
         let mut e = Evaluator {
             loop_depth: 0,
             call_depth: 0,
+            call_stack: Vec::new(),
             module_cache: HashMap::new(),
         };
         e.preload_stdlib();
@@ -1696,9 +1704,17 @@ impl Evaluator {
                     extended.borrow_mut().set(param.name.clone(), val)
                 }
 
+                self.call_stack.push(CallFrame{
+                    name:parameters[0].name.clone(),
+                    call_line:line,
+                    call_column:column
+                });
+                
                 self.call_depth += 1;
                 let result = self.eval_statement(&body, &extended);
                 self.call_depth -= 1;
+                self.call_stack.pop();
+                
                 match result {
                     Object::Return(v) => *v,
                     other => other,

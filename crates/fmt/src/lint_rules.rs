@@ -171,9 +171,19 @@ impl Visitor for ShadowedBinding {
         self.register_pattern(pattern, line, col);
     }
 
-    fn visit_expression(&mut self, expr: &Expression) {
-        
-    }
+    todo!(); /// Task 8
+
+    // fn visit_expression(&mut self, expr: &Expression) {
+    //     if let Expression::Function { parameter, body, .. } = expr {
+    //         self.scope_stack.push(HashMap::new());
+    //         for param in parameter {
+    //             if self.scope_stack.contains(param.name) {
+                    
+    //             }
+    //             self.register_pattern(param.name, line, col);
+    //         }
+    //     }
+    // }
 }
 
 impl LintRule for ShadowedBinding {
@@ -407,7 +417,8 @@ impl Visitor for DeadCode {
                 self.visit_statement(s);
             }
 
-            self.returned = saved;
+            let block_returned = self.returned;
+            self.returned = saved || block_returned;
         }
 
         walk_statement(self, stmt);
